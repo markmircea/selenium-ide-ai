@@ -12,11 +12,22 @@ const {
   state: { set },
 } = window.sideAPI
 
-const fieldStyle = { width: 60 }
+const fieldStyle = { 
+  width: 65,
+  '& .MuiInputBase-root': {
+    borderRadius: 1,
+    transition: 'all 0.2s ease',
+    '&.Mui-focused': {
+      boxShadow: '0 0 0 2px rgba(66, 133, 244, 0.25)',
+    },
+  }
+}
+
 const inputProps = {
   sx: {
-    paddingLeft: 0.5,
-    paddingRight: 0.5,
+    paddingLeft: 1,
+    paddingRight: 1,
+    fontSize: '0.9rem',
   },
 }
 
@@ -44,69 +55,120 @@ const PlaybackDimensionControls: React.FC = () => {
   }, [active])
   return (
     <>
-      <Tooltip
-        placement="left"
-        title={<FormattedMessage id={languageMap.playback.windowSize} />}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          background: (theme) => 
+            theme.palette.mode === 'dark' 
+              ? 'rgba(0, 0, 0, 0.1)' 
+              : 'rgba(0, 0, 0, 0.03)',
+          borderRadius: 1,
+          py: 0.5,
+          px: 1,
+          mx: 1,
+        }}
       >
-        <Box
-          className="flex flex-row flex-initial ps-3"
-          justifyContent="center"
-          sx={{
-            cursor: 'pointer',
-          }}
-          onClick={() =>
-            set('editor.overrideWindowSize', {
-              active: !active,
-              width: panelWidth,
-              height: panelHeight,
-            })
-          }
+        <Tooltip
+          placement="left"
+          title={<FormattedMessage id={languageMap.playback.windowSize} />}
+          arrow
         >
-          <TabUnselectedIcon className="height-100" />
-          <Checkbox checked={active} size="small" disableRipple />
+          <Box
+            className="flex flex-row flex-initial"
+            justifyContent="center"
+            sx={{
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              mr: 1,
+            }}
+            onClick={() =>
+              set('editor.overrideWindowSize', {
+                active: !active,
+                width: panelWidth,
+                height: panelHeight,
+              })
+            }
+          >
+            <TabUnselectedIcon 
+              className="height-100" 
+              fontSize="small"
+              sx={{ 
+                color: active ? 'primary.main' : 'text.secondary',
+                mr: 0.5,
+              }}
+            />
+            <Checkbox 
+              checked={active} 
+              size="small" 
+              disableRipple 
+              sx={{
+                padding: 0.5,
+                color: 'text.secondary',
+                '&.Mui-checked': {
+                  color: 'primary.main',
+                },
+              }}
+            />
+          </Box>
+        </Tooltip>
+        <Box className="flex flex-col flex-initial pe-1" justifyContent="center">
+          <Typography 
+            variant="body2"
+            sx={{
+              fontWeight: 500,
+              color: active ? 'text.primary' : 'text.secondary',
+              fontSize: '0.85rem',
+            }}
+          >
+            <FormattedMessage id={languageMap.playback.width} />
+          </Typography>
         </Box>
-      </Tooltip>
-      <Box className="flex flex-col flex-initial pe-3" justifyContent="center">
-        <Typography>
-          <FormattedMessage id={languageMap.playback.width} />
-        </Typography>
-      </Box>
-      <Box className="flex-initial">
-        <TextField
-          disabled={!active}
-          inputProps={inputProps}
-          onChange={(e: any) => {
-            const val = Number(e.target.value)
-            if (!isNaN(val)) {
-              set('editor.overrideWindowSize.width', val)
-            }
-          }}
-          margin="none"
-          size="small"
-          sx={fieldStyle}
-          value={active ? width : panelWidth}
-        />
-      </Box>
-      <Box className="flex flex-col flex-initial px-3" justifyContent="center">
-        <Typography>
-          <FormattedMessage id={languageMap.playback.height} />
-        </Typography>
-      </Box>
-      <Box className="flex-initial pe-4">
-        <TextField
-          disabled={!active}
-          inputProps={inputProps}
-          onChange={(e: any) => {
-            const val = Number(e.target.value)
-            if (!isNaN(val)) {
-              set('editor.overrideWindowSize.height', val)
-            }
-          }}
-          margin="none"
-          size="small"
-          sx={fieldStyle}
-          value={active ? height : panelHeight}
-        />
+        <Box className="flex-initial">
+          <TextField
+            disabled={!active}
+            inputProps={inputProps}
+            onChange={(e: any) => {
+              const val = Number(e.target.value)
+              if (!isNaN(val)) {
+                set('editor.overrideWindowSize.width', val)
+              }
+            }}
+            margin="none"
+            size="small"
+            sx={fieldStyle}
+            value={active ? width : panelWidth}
+          />
+        </Box>
+        <Box className="flex flex-col flex-initial px-2" justifyContent="center">
+          <Typography 
+            variant="body2"
+            sx={{
+              fontWeight: 500,
+              color: active ? 'text.primary' : 'text.secondary',
+              fontSize: '0.85rem',
+            }}
+          >
+            <FormattedMessage id={languageMap.playback.height} />
+          </Typography>
+        </Box>
+        <Box className="flex-initial">
+          <TextField
+            disabled={!active}
+            inputProps={inputProps}
+            onChange={(e: any) => {
+              const val = Number(e.target.value)
+              if (!isNaN(val)) {
+                set('editor.overrideWindowSize.height', val)
+              }
+            }}
+            margin="none"
+            size="small"
+            sx={fieldStyle}
+            value={active ? height : panelHeight}
+          />
+        </Box>
       </Box>
     </>
   )

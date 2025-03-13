@@ -20,8 +20,20 @@ const URLBar: React.FC<{ tab: null | TabShape }> = ({ tab }) => {
   }, [tabURL])
   return (
     <>
-      <Box className="flex flex-col flex-initial" justifyContent="center">
-        <Typography>
+      <Box 
+        className="flex flex-col flex-initial" 
+        justifyContent="center"
+        sx={{
+          mr: 1,
+        }}
+      >
+        <Typography 
+          variant="body2"
+          sx={{
+            fontWeight: 500,
+            color: 'primary.main',
+          }}
+        >
           <FormattedMessage id={languageMap.playback.url} />
         </Typography>
       </Box>
@@ -30,6 +42,19 @@ const URLBar: React.FC<{ tab: null | TabShape }> = ({ tab }) => {
           className="width-100"
           inputProps={{
             ['data-url']: true,
+            style: {
+              fontSize: '0.9rem',
+              padding: '8px 12px',
+            }
+          }}
+          InputProps={{
+            sx: {
+              borderRadius: 1,
+              '&.Mui-focused': {
+                boxShadow: '0 0 0 2px rgba(66, 133, 244, 0.25)',
+              },
+              transition: 'all 0.2s ease',
+            }
           }}
           inputRef={ref}
           onKeyDown={(e) => {
@@ -40,6 +65,8 @@ const URLBar: React.FC<{ tab: null | TabShape }> = ({ tab }) => {
           }}
           margin="none"
           size="small"
+          placeholder="https://example.com"
+          disabled={!tab}
         />
       </Box>
     </>

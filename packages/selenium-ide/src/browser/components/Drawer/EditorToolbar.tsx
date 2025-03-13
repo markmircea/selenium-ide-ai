@@ -35,93 +35,143 @@ export const EditorToolbarIcons: FC<EditorToolbarIconsProps> = ({
   onView,
   viewText = 'View',
 }) => (
-  <>
+  <Box sx={{ 
+    display: 'flex', 
+    alignItems: 'center',
+    gap: 0.5,
+    background: (theme) => 
+      theme.palette.mode === 'dark' 
+        ? 'rgba(0, 0, 0, 0.1)' 
+        : 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 1,
+    p: 0.5,
+    mx: 0.5
+  }}>
     {onRemove ? (
-      <Box sx={{ flex: 0 }}>
-        <Tooltip
-          title={
-            <FormattedMessage
-              id={languageMap.testsTab.remove}
-              defaultMessage={removeText}
-            />
-          }
+      <Tooltip
+        title={
+          <FormattedMessage
+            id={languageMap.testsTab.remove}
+            defaultMessage={removeText}
+          />
+        }
+        arrow
+        placement="top"
+      >
+        <IconButton
+          {...baseControlProps}
+          color="warning"
+          disabled={disabled}
+          onClick={onRemove}
+          size="small"
+          sx={{
+            ...baseControlProps.sx,
+            m: 0.5
+          }}
         >
-          <IconButton
-            {...baseControlProps}
-            color="warning"
-            disabled={disabled}
-            onClick={onRemove}
-          >
-            <RemoveIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
+          <RemoveIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
     ) : null}
     {onEdit ? (
-      <Box sx={{ flex: 0 }}>
-        <Tooltip title={editText}>
-          <IconButton
-            {...baseControlProps}
-            color="info"
-            disabled={disabled}
-            onClick={onEdit}
-          >
-            <EditIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
+      <Tooltip 
+        title={editText}
+        arrow
+        placement="top"
+      >
+        <IconButton
+          {...baseControlProps}
+          color="info"
+          disabled={disabled}
+          onClick={onEdit}
+          size="small"
+          sx={{
+            ...baseControlProps.sx,
+            m: 0.5
+          }}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
     ) : null}
     {onView ? (
-      <Box sx={{ flex: 0 }}>
-        <Tooltip title={viewText}>
-          <IconButton
-            {...baseControlProps}
-            color="info"
-            disabled={disabled}
-            onClick={onView}
-          >
-            <VisibilityIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
+      <Tooltip 
+        title={viewText}
+        arrow
+        placement="top"
+      >
+        <IconButton
+          {...baseControlProps}
+          color="info"
+          disabled={disabled}
+          onClick={onView}
+          size="small"
+          sx={{
+            ...baseControlProps.sx,
+            m: 0.5
+          }}
+        >
+          <VisibilityIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
     ) : null}
     {onAdd ? (
-      <Box sx={{ flex: 0 }}>
-        <Tooltip
-          title={
-            <FormattedMessage
-              id={languageMap.testsTab.add}
-              defaultMessage={addText}
-            />
-          }
+      <Tooltip
+        title={
+          <FormattedMessage
+            id={languageMap.testsTab.add}
+            defaultMessage={addText}
+          />
+        }
+        arrow
+        placement="top"
+      >
+        <IconButton
+          {...baseControlProps}
+          color="success"
+          disabled={disabled}
+          onClick={onAdd}
+          size="small"
+          sx={{
+            ...baseControlProps.sx,
+            m: 0.5
+          }}
         >
-          <IconButton
-            {...baseControlProps}
-            color="success"
-            disabled={disabled}
-            onClick={onAdd}
-          >
-            <AddIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
+          <AddIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
     ) : null}
-  </>
+  </Box>
 )
 
 export const EditorToolbarShell: FC<PaperProps> = ({
   children,
   className = '',
-  elevation = 7,
+  elevation = 2,
   ...props
 }) => (
   <DrawerHeader
     className={className + ' flex flex-row'}
     elevation={elevation}
     square
+    sx={{
+      borderBottom: '1px solid',
+      borderColor: 'divider',
+      backdropFilter: 'blur(8px)',
+      background: (theme) => 
+        theme.palette.mode === 'dark' 
+          ? 'rgba(30, 30, 30, 0.8)' 
+          : 'rgba(255, 255, 255, 0.8)',
+      transition: 'all 0.3s ease',
+    }}
     {...props}
   >
-    <Box sx={{ flex: 1 }}>{children}</Box>
+    <Box sx={{ 
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      px: 1
+    }}>{children}</Box>
   </DrawerHeader>
 )
 
@@ -133,7 +183,7 @@ const EditorToolbar: FC<EditorToolbarProps> = ({
   children,
   className = '',
   disabled = false,
-  elevation = 0,
+  elevation = 2,
   onAdd,
   addText = 'Add',
   onEdit,
@@ -149,20 +199,42 @@ const EditorToolbar: FC<EditorToolbarProps> = ({
       className={className + ' flex flex-row'}
       elevation={elevation}
       square
+      sx={{
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        backdropFilter: 'blur(8px)',
+        background: (theme) => 
+          theme.palette.mode === 'dark' 
+            ? 'rgba(30, 30, 30, 0.8)' 
+            : 'rgba(255, 255, 255, 0.8)',
+        transition: 'all 0.3s ease',
+      }}
       {...props}
     >
-      <Box sx={{ flex: 1 }}>{children}</Box>
-      <EditorToolbarIcons
-        disabled={disabled}
-        onAdd={onAdd}
-        addText={addText}
-        onEdit={onEdit}
-        editText={editText}
-        onRemove={onRemove}
-        removeText={removeText}
-        onView={onView}
-        viewText={viewText}
-      />
+      <Box sx={{ 
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        px: 1
+      }}>{children}</Box>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        pr: 1
+      }}>
+        <EditorToolbarIcons
+          disabled={disabled}
+          onAdd={onAdd}
+          addText={addText}
+          onEdit={onEdit}
+          editText={editText}
+          onRemove={onRemove}
+          removeText={removeText}
+          onView={onView}
+          viewText={viewText}
+        />
+      </Box>
     </DrawerHeader>
   )
 }

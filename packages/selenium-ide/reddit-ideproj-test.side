@@ -1,0 +1,222 @@
+{
+  "id": "0472f63f-28bc-42a0-9de5-58b60ed09fc4",
+  "version": "3.0",
+  "name": "Reddit",
+  "url": "http://www.google.com",
+  "urls": [
+    "http://www.google.com"
+  ],
+  "plugins": [],
+  "suites": [
+    {
+      "id": "7213202a-b4d6-4f46-9284-56e2e92a8ed4",
+      "name": "New Suite",
+      "parallel": false,
+      "persistSession": false,
+      "tests": [
+        "995ad7bb-2352-4e14-9d87-964953d56387"
+      ],
+      "timeout": 30000
+    }
+  ],
+  "tests": [
+    {
+      "id": "995ad7bb-2352-4e14-9d87-964953d56387",
+      "name": "New Test",
+      "commands": [
+        {
+          "id": "f5609c50-1c36-423e-bb04-0ecf8e730967",
+          "command": "open",
+          "target": "https://reddit.com",
+          "value": ""
+        },
+        {
+          "command": "runScript",
+          "target": "window.scrollTo(0,0)",
+          "value": "",
+          "insertBeforeLastCommand": false,
+          "frameLocation": "root",
+          "winHandleId": "root",
+          "id": "8083d0ff-51ab-44cc-a9e9-60251bb0236a",
+          "targets": [
+            [
+              "window.scrollTo(0,0)",
+              ""
+            ]
+          ]
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "css=#login-button > .flex > .flex",
+          "value": "",
+          "insertBeforeLastCommand": false,
+          "frameLocation": "root",
+          "winHandleId": "root",
+          "id": "0afef4a2-6ee9-46a4-bb81-0f0870e3a454",
+          "targets": [
+            [
+              "css=#login-button > .flex > .flex",
+              "css:finder"
+            ],
+            [
+              "xpath=(//a[@id='login-button']/span/span)[1]",
+              "xpath:idRelative"
+            ]
+          ]
+        },
+        {
+          "command": "click",
+          "target": "css=#login-button > .flex > .flex",
+          "value": "",
+          "insertBeforeLastCommand": false,
+          "frameLocation": "root",
+          "winHandleId": "root",
+          "id": "6dd70f31-298c-4430-aade-8af96b623d79",
+          "targets": [
+            [
+              "css=#login-button > .flex > .flex",
+              "css:finder"
+            ],
+            [
+              "xpath=(//a[@id='login-button']/span/span)[1]",
+              "xpath:idRelative"
+            ]
+          ]
+        },
+        {
+          "command": "click",
+          "target": "id=login-username",
+          "value": "",
+          "insertBeforeLastCommand": false,
+          "frameLocation": "root",
+          "winHandleId": "root",
+          "id": "70f805e8-bd8c-47e8-a1cb-9502b16564ed",
+          "targets": [
+            [
+              "id=login-username",
+              "id"
+            ],
+            [
+              "css=#login-username",
+              "css:finder"
+            ],
+            [
+              "xpath=(//faceplate-text-input[@id='login-username'])[1]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=(//faceplate-form[@id='login']/auth-flow-modal/div/fieldset/faceplate-text-input)[1]",
+              "xpath:idRelative"
+            ]
+          ]
+        },
+        {
+          "command": "waitForElementEditable",
+          "target": "id=login-username",
+          "value": "200",
+          "id": "97eeb090-3a34-4d7c-85cb-6cababf2d592"
+        },
+        {
+          "command": "pause",
+          "target": "1000",
+          "value": "",
+          "id": "db941013-6153-4902-8847-b82bfe27a99d"
+        },
+        {
+          "command": "doubleClick",
+          "target": "id=login-username",
+          "value": "",
+          "id": "31993fa4-b16a-42c4-b85d-3c8f503cb73b"
+        },
+        {
+          "command": "sendKeys",
+          "target": "id=login-username",
+          "value": "bigbootyrob",
+          "id": "93be77aa-016b-4e44-99f0-c8010c4f3f3c"
+        },
+        {
+          "command": "click",
+          "target": "id=login-password",
+          "value": "",
+          "insertBeforeLastCommand": false,
+          "frameLocation": "root",
+          "winHandleId": "root",
+          "id": "c8b30330-9413-4c4c-ba60-8f6a3fa7cbc8",
+          "targets": [
+            [
+              "id=login-password",
+              "id"
+            ],
+            [
+              "css=#login-password",
+              "css:finder"
+            ],
+            [
+              "xpath=(//faceplate-text-input[@id='login-password'])[1]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=(//faceplate-form[@id='login']/auth-flow-modal/div/fieldset[2]/faceplate-text-input)[1]",
+              "xpath:idRelative"
+            ]
+          ]
+        },
+        {
+          "command": "sendKeys",
+          "target": "id=login-password",
+          "value": "1893Apple",
+          "id": "577b6abc-7dd2-4956-8b0d-f6f5e8890813"
+        },
+        {
+          "command": "click",
+          "target": "css=.login > .flex > .flex",
+          "value": "",
+          "insertBeforeLastCommand": false,
+          "frameLocation": "root",
+          "winHandleId": "root",
+          "id": "3a62e83c-3446-4e82-8244-496a4fcb0e70",
+          "targets": [
+            [
+              "css=.login > .flex > .flex",
+              "css:finder"
+            ],
+            [
+              "xpath=(//faceplate-form[@id='login']/auth-flow-modal/div[2]/faceplate-tracker/button/span/span)[1]",
+              "xpath:idRelative"
+            ]
+          ]
+        },
+        {
+          "command": "click",
+          "target": "css=.login",
+          "value": "",
+          "insertBeforeLastCommand": false,
+          "frameLocation": "root",
+          "winHandleId": "root",
+          "id": "20666662-ae33-4b5d-8160-620d37db095c",
+          "targets": [
+            [
+              "css=.login",
+              "css:finder"
+            ],
+            [
+              "xpath=(//faceplate-form[@id='login']/auth-flow-modal/div[2]/faceplate-tracker/button)[1]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//button[contains(.,'Log In')]",
+              "xpath:innerText"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "snapshot": {
+    "dependencies": {},
+    "tests": [],
+    "jest": {
+      "extraGlobals": []
+    }
+  }
+}
