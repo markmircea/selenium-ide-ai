@@ -59,19 +59,64 @@ const CommandList: FC<CommandListProps> = ({
           id: languageMap.testCore.removeCommand,
         })}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-          <Box className="flex" sx={{ flex: 0, flexBasis: 50 }}>
+         <Box 
+          className="flex flex-row"
+          sx={{ 
+            width: '100%',
+            paddingTop: 0.5,
+            paddingBottom: 0.5,
+            textAlign: 'flex-start'
+          }}
+        >
+          <Box 
+            className="flex-initial" 
+            sx={{ 
+              flexBasis: 50, 
+              textAlign: 'center',
+              justifyContent: 'center'
+            }}
+          >
             &nbsp;
           </Box>
-          <Box className="flex" sx={{ flex: 1 }}>
-            {intl.formatMessage({ id: languageMap.testCore.tabCommand })}
+          <Box className="flex flex-1 no-overflow-x">
+            <Box 
+              className="flex flex-col" 
+              sx={{ 
+                justifyContent: 'center',
+                color: 'primary.main', 
+                typography: 'body2' 
+              }}
+            >
+              {intl.formatMessage({ id: languageMap.testCore.tabCommand })}
+            </Box>
           </Box>
-          <Box className="flex" sx={{ flex: 2, paddingLeft: 2 }}>
-            {intl.formatMessage({ id: languageMap.testCore.tabTarget })}
+          <Box className="flex no-overflow-x" sx={{ flex: '2 2 1px' }}>
+            <Box 
+              className="flex flex-col" 
+              sx={{ 
+                justifyContent: 'center',
+                color: 'secondary.main', 
+                typography: 'subtitle2', 
+                ml: 4 
+              }}
+            >
+              {intl.formatMessage({ id: languageMap.testCore.tabTarget })}
+            </Box>
           </Box>
-          <Box className="flex" sx={{ flex: 2, paddingLeft: 2 }}>
-            {intl.formatMessage({ id: languageMap.testCore.tabValue })}
+          <Box className="flex no-overflow-x" sx={{ flex: '2 2 1px' }}>
+            <Box 
+              className="flex flex-col" 
+              sx={{ 
+                justifyContent: 'center',
+                color: 'secondary.main', 
+                typography: 'subtitle2', 
+                ml: 10 
+              }}
+            >
+              {intl.formatMessage({ id: languageMap.testCore.tabValue })}
+            </Box>
           </Box>
+          <Box className="flex" sx={{ flex: 0, flexBasis: 74 }}>&nbsp;</Box>
         </Box>
       </EditorToolbar>
       <ReorderableList
