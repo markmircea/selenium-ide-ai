@@ -11,6 +11,7 @@ import DrawerHeader from './Header'
 import baseControlProps from '../Controls/BaseProps'
 import languageMap from 'browser/I18N/keys'
 import { FormattedMessage } from 'react-intl'
+import { useTheme } from '@mui/material/styles'
 
 export interface EditorToolbarIconsProps {
   disabled?: boolean
@@ -34,146 +35,224 @@ export const EditorToolbarIcons: FC<EditorToolbarIconsProps> = ({
   removeText = 'Remove',
   onView,
   viewText = 'View',
-}) => (
-  <Box sx={{ 
-    display: 'flex', 
-    alignItems: 'center',
-    gap: 0.5,
-    background: (theme) => 
-      theme.palette.mode === 'dark' 
-        ? 'rgba(0, 0, 0, 0.1)' 
-        : 'rgba(0, 0, 0, 0.03)',
-    borderRadius: 1,
-    p: 0.5,
-    mx: 0.5
-  }}>
-    {onRemove ? (
-      <Tooltip
-        title={
-          <FormattedMessage
-            id={languageMap.testsTab.remove}
-            defaultMessage={removeText}
-          />
-        }
-        arrow
-        placement="top"
-      >
-        <IconButton
-          {...baseControlProps}
-          color="warning"
-          disabled={disabled}
-          onClick={onRemove}
-          size="small"
-          sx={{
-            ...baseControlProps.sx,
-            m: 0.5
-          }}
+}) => {
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
+  
+  return (
+    <Box sx={{ 
+      display: 'flex', 
+      alignItems: 'center',
+      gap: 0.75,
+      background: isDarkMode 
+        ? 'linear-gradient(to right, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.1))' 
+        : 'linear-gradient(to right, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.02))',
+      borderRadius: 2,
+      p: 0.75,
+      mx: 0.75,
+      boxShadow: isDarkMode 
+        ? 'inset 0 1px 3px rgba(0, 0, 0, 0.2)' 
+        : 'inset 0 1px 3px rgba(0, 0, 0, 0.05)',
+    }}>
+      {onRemove ? (
+        <Tooltip
+          title={
+            <FormattedMessage
+              id={languageMap.testsTab.remove}
+              defaultMessage={removeText}
+            />
+          }
+          arrow
+          placement="top"
         >
-          <RemoveIcon fontSize="small" />
-        </IconButton>
-      </Tooltip>
-    ) : null}
-    {onEdit ? (
-      <Tooltip 
-        title={editText}
-        arrow
-        placement="top"
-      >
-        <IconButton
-          {...baseControlProps}
-          color="info"
-          disabled={disabled}
-          onClick={onEdit}
-          size="small"
-          sx={{
-            ...baseControlProps.sx,
-            m: 0.5
-          }}
+          <span>
+            <IconButton
+              {...baseControlProps}
+              color="warning"
+              disabled={disabled}
+              onClick={onRemove}
+              size="small"
+              sx={{
+                ...baseControlProps.sx,
+                m: 0.25,
+                backgroundColor: isDarkMode 
+                  ? 'rgba(234, 67, 53, 0.1)' 
+                  : 'rgba(234, 67, 53, 0.05)',
+                '&:hover': {
+                  backgroundColor: isDarkMode 
+                    ? 'rgba(234, 67, 53, 0.2)' 
+                    : 'rgba(234, 67, 53, 0.1)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                },
+                '&.Mui-disabled': {
+                  opacity: 0.5,
+                  backgroundColor: 'transparent',
+                }
+              }}
+            >
+              <RemoveIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : null}
+      {onEdit ? (
+        <Tooltip 
+          title={editText}
+          arrow
+          placement="top"
         >
-          <EditIcon fontSize="small" />
-        </IconButton>
-      </Tooltip>
-    ) : null}
-    {onView ? (
-      <Tooltip 
-        title={viewText}
-        arrow
-        placement="top"
-      >
-        <IconButton
-          {...baseControlProps}
-          color="info"
-          disabled={disabled}
-          onClick={onView}
-          size="small"
-          sx={{
-            ...baseControlProps.sx,
-            m: 0.5
-          }}
+          <span>
+            <IconButton
+              {...baseControlProps}
+              color="info"
+              disabled={disabled}
+              onClick={onEdit}
+              size="small"
+              sx={{
+                ...baseControlProps.sx,
+                m: 0.25,
+                backgroundColor: isDarkMode 
+                  ? 'rgba(79, 195, 247, 0.1)' 
+                  : 'rgba(79, 195, 247, 0.05)',
+                '&:hover': {
+                  backgroundColor: isDarkMode 
+                    ? 'rgba(79, 195, 247, 0.2)' 
+                    : 'rgba(79, 195, 247, 0.1)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                },
+                '&.Mui-disabled': {
+                  opacity: 0.5,
+                  backgroundColor: 'transparent',
+                }
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : null}
+      {onView ? (
+        <Tooltip 
+          title={viewText}
+          arrow
+          placement="top"
         >
-          <VisibilityIcon fontSize="small" />
-        </IconButton>
-      </Tooltip>
-    ) : null}
-    {onAdd ? (
-      <Tooltip
-        title={
-          <FormattedMessage
-            id={languageMap.testsTab.add}
-            defaultMessage={addText}
-          />
-        }
-        arrow
-        placement="top"
-      >
-        <IconButton
-          {...baseControlProps}
-          color="success"
-          disabled={disabled}
-          onClick={onAdd}
-          size="small"
-          sx={{
-            ...baseControlProps.sx,
-            m: 0.5
-          }}
+          <span>
+            <IconButton
+              {...baseControlProps}
+              color="info"
+              disabled={disabled}
+              onClick={onView}
+              size="small"
+              sx={{
+                ...baseControlProps.sx,
+                m: 0.25,
+                backgroundColor: isDarkMode 
+                  ? 'rgba(79, 195, 247, 0.1)' 
+                  : 'rgba(79, 195, 247, 0.05)',
+                '&:hover': {
+                  backgroundColor: isDarkMode 
+                    ? 'rgba(79, 195, 247, 0.2)' 
+                    : 'rgba(79, 195, 247, 0.1)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                },
+                '&.Mui-disabled': {
+                  opacity: 0.5,
+                  backgroundColor: 'transparent',
+                }
+              }}
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : null}
+      {onAdd ? (
+        <Tooltip
+          title={
+            <FormattedMessage
+              id={languageMap.testsTab.add}
+              defaultMessage={addText}
+            />
+          }
+          arrow
+          placement="top"
         >
-          <AddIcon fontSize="small" />
-        </IconButton>
-      </Tooltip>
-    ) : null}
-  </Box>
-)
+          <span>
+            <IconButton
+              {...baseControlProps}
+              color="success"
+              disabled={disabled}
+              onClick={onAdd}
+              size="small"
+              sx={{
+                ...baseControlProps.sx,
+                m: 0.25,
+                backgroundColor: isDarkMode 
+                  ? 'rgba(52, 168, 83, 0.1)' 
+                  : 'rgba(52, 168, 83, 0.05)',
+                '&:hover': {
+                  backgroundColor: isDarkMode 
+                    ? 'rgba(52, 168, 83, 0.2)' 
+                    : 'rgba(52, 168, 83, 0.1)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                },
+                '&.Mui-disabled': {
+                  opacity: 0.5,
+                  backgroundColor: 'transparent',
+                }
+              }}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : null}
+    </Box>
+  )
+}
 
 export const EditorToolbarShell: FC<PaperProps> = ({
   children,
   className = '',
   elevation = 2,
   ...props
-}) => (
-  <DrawerHeader
-    className={className + ' flex flex-row'}
-    elevation={elevation}
-    square
-    sx={{
-      borderBottom: '1px solid',
-      borderColor: 'divider',
-      backdropFilter: 'blur(8px)',
-      background: (theme) => 
-        theme.palette.mode === 'dark' 
-          ? 'rgba(30, 30, 30, 0.8)' 
-          : 'rgba(255, 255, 255, 0.8)',
-      transition: 'all 0.3s ease',
-    }}
-    {...props}
-  >
-    <Box sx={{ 
-      flex: 1,
-      display: 'flex',
-      alignItems: 'center',
-      px: 1
-    }}>{children}</Box>
-  </DrawerHeader>
-)
+}) => {
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
+  
+  return (
+    <DrawerHeader
+      className={className + ' flex flex-row'}
+      elevation={elevation}
+      square
+      sx={{
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        backdropFilter: 'blur(10px)',
+        background: isDarkMode 
+          ? 'linear-gradient(to right, rgba(30, 30, 30, 0.9), rgba(35, 35, 35, 0.85))' 
+          : 'linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(250, 250, 250, 0.9))',
+        transition: 'all 0.3s ease',
+        boxShadow: isDarkMode 
+          ? '0 2px 8px rgba(0, 0, 0, 0.2)' 
+          : '0 2px 8px rgba(0, 0, 0, 0.05)',
+      }}
+      {...props}
+    >
+      <Box sx={{ 
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        px: 1.5
+      }}>{children}</Box>
+    </DrawerHeader>
+  )
+}
 
 export interface EditorToolbarProps
   extends PaperProps,
@@ -194,6 +273,9 @@ const EditorToolbar: FC<EditorToolbarProps> = ({
   viewText = 'View',
   ...props
 }) => {
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
+  
   return (
     <DrawerHeader
       className={className + ' flex flex-row'}
@@ -202,12 +284,14 @@ const EditorToolbar: FC<EditorToolbarProps> = ({
       sx={{
         borderBottom: '1px solid',
         borderColor: 'divider',
-        backdropFilter: 'blur(8px)',
-        background: (theme) => 
-          theme.palette.mode === 'dark' 
-            ? 'rgba(30, 30, 30, 0.8)' 
-            : 'rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(10px)',
+        background: isDarkMode 
+          ? 'linear-gradient(to right, rgba(30, 30, 30, 0.9), rgba(35, 35, 35, 0.85))' 
+          : 'linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(250, 250, 250, 0.9))',
         transition: 'all 0.3s ease',
+        boxShadow: isDarkMode 
+          ? '0 2px 8px rgba(0, 0, 0, 0.2)' 
+          : '0 2px 8px rgba(0, 0, 0, 0.05)',
       }}
       {...props}
     >
@@ -215,13 +299,13 @@ const EditorToolbar: FC<EditorToolbarProps> = ({
         flex: 1,
         display: 'flex',
         alignItems: 'center',
-        px: 1
+        px: 1.5
       }}>{children}</Box>
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
         gap: 0.5,
-        pr: 1
+        pr: 1.5
       }}>
         <EditorToolbarIcons
           disabled={disabled}

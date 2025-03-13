@@ -1,68 +1,89 @@
 import Paper from '@mui/material/Paper'
-import { Theme } from '@mui/material/styles'
+import { useTheme } from '@mui/material/styles'
 import React from 'react'
 import PlaybackTab, { TabShape } from './tab'
 import IconButton from '@mui/material/IconButton'
 import { Add } from '@mui/icons-material'
 import baseControlProps from '../Controls/BaseProps'
 import Box from '@mui/material/Box'
+import Tooltip from '@mui/material/Tooltip'
 
 const {
   windows: { requestPlaybackWindow },
 } = window.sideAPI
 
-const tabBarSX = {
-  borderBottom: '1px solid',
-  borderColor: 'divider',
-  height: 42,
-  background: (theme: Theme) => 
-    theme.palette.mode === 'dark' 
-      ? 'linear-gradient(rgba(30, 30, 30, 0.95), rgba(30, 30, 30, 0.85))' 
-      : 'linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85))',
-  backdropFilter: 'blur(8px)',
-  transition: 'all 0.3s ease',
-}
+const PlaybackTabBar: React.FC<{ tabs: TabShape[] }> = ({ tabs }) => {
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
 
-const PlaybackTabBar: React.FC<{ tabs: TabShape[] }> = ({ tabs }) => (
-  <Paper
-    className="flex flex-initial flex-row pt-2 width-100 z-1"
-    elevation={3}
-    square
-    sx={tabBarSX}
-  >
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
-      overflowX: 'auto',
-      '&::-webkit-scrollbar': {
-        height: 4,
-      },
-      '&::-webkit-scrollbar-thumb': {
-        backgroundColor: (theme) => 
-          theme.palette.mode === 'dark' 
-            ? 'rgba(255, 255, 255, 0.2)' 
-            : 'rgba(0, 0, 0, 0.2)',
-        borderRadius: 2,
-      },
-    }}>
-      {tabs.map((tab) => (
-        <PlaybackTab key={tab.id} {...tab} />
-      ))}
-    </Box>
-    <IconButton 
-      {...baseControlProps} 
-      onClick={() => requestPlaybackWindow()}
+  return (
+    <Paper
+      className="flex flex-initial flex-row pt-2 width-100 z-1"
+      elevation={3}
+      square
       sx={{
-        ...baseControlProps.sx,
-        color: 'primary.main',
-        m: 0.5,
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        height: 46,
+        background: isDarkMode 
+          ? 'linear-gradient(rgba(30, 30, 30, 0.95), rgba(25, 25, 25, 0.9))' 
+          : 'linear-gradient(rgba(255, 255, 255, 0.97), rgba(250, 250, 250, 0.95))',
+        backdropFilter: 'blur(10px)',
+        transition: 'all 0.3s ease',
+        boxShadow: isDarkMode
+          ? '0 2px 8px rgba(0, 0, 0, 0.4)'
+          : '0 2px 8px rgba(0, 0, 0, 0.08)',
       }}
     >
-      <Add />
-    </IconButton>
-  </Paper>
-)
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        overflowX: 'auto',
+        px: 1,
+        gap: 0.5,
+        '&::-webkit-scrollbar': {
+          height: 6,
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)',
+          borderRadius: 3,
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+          borderRadius: 3,
+          '&:hover': {
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+          },
+        },
+      }}>
+        {tabs.map((tab) => (
+          <PlaybackTab key={tab.id} {...tab} />
+        ))}
+      </Box>
+      <Tooltip title="Add new window" arrow placement="left">
+        <IconButton 
+          {...baseControlProps} 
+          onClick={() => requestPlaybackWindow()}
+          sx={{
+            ...baseControlProps.sx,
+            color: 'primary.main',
+            m: 0.5,
+            mr: 1.5,
+            backgroundColor: isDarkMode ? 'rgba(66, 133, 244, 0.1)' : 'rgba(66, 133, 244, 0.05)',
+            '&:hover': {
+              backgroundColor: isDarkMode ? 'rgba(66, 133, 244, 0.2)' : 'rgba(66, 133, 244, 0.1)',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+            },
+          }}
+        >
+          <Add />
+        </IconButton>
+      </Tooltip>
+    </Paper>
+  )
+}
 
 export default PlaybackTabBar

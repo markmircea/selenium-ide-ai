@@ -1,0 +1,6 @@
+{
+    "search.exclude": {
+        "**/bower_components": false
+    },
+    "search.useIgnoreFiles": false
+}

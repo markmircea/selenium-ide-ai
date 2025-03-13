@@ -1,41 +1,26 @@
-import TabUnselectedIcon from '@mui/icons-material/TabUnselected'
+import AspectRatioIcon from '@mui/icons-material/AspectRatio'
 import Box from '@mui/material/Box'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import React, { useContext } from 'react'
-import { Checkbox, Tooltip } from '@mui/material'
+import { Tooltip, Chip, Switch } from '@mui/material'
 import { context } from 'browser/contexts/session'
 import languageMap from 'browser/I18N/keys'
 import { FormattedMessage } from 'react-intl'
+import { useTheme } from '@mui/material/styles'
 
 const {
   state: { set },
 } = window.sideAPI
 
-const fieldStyle = { 
-  width: 65,
-  '& .MuiInputBase-root': {
-    borderRadius: 1,
-    transition: 'all 0.2s ease',
-    '&.Mui-focused': {
-      boxShadow: '0 0 0 2px rgba(66, 133, 244, 0.25)',
-    },
-  }
-}
-
-const inputProps = {
-  sx: {
-    paddingLeft: 1,
-    paddingRight: 1,
-    fontSize: '0.9rem',
-  },
-}
-
 const PlaybackDimensionControls: React.FC = () => {
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
   const session = useContext(context)
   const [panelWidth, setPanelWidth] = React.useState(0)
   const [panelHeight, setPanelHeight] = React.useState(0)
   const { active, width, height } = session.state.editor.overrideWindowSize
+  
   React.useEffect(() => {
     if (active) {
       return
@@ -53,20 +38,64 @@ const PlaybackDimensionControls: React.FC = () => {
     observer.observe(playbackPanel)
     return () => observer.disconnect()
   }, [active])
+  
+  const fieldStyle = { 
+    width: 70,
+    '& .MuiInputBase-root': {
+      borderRadius: 2,
+      backgroundColor: isDarkMode 
+        ? 'rgba(0, 0, 0, 0.15)' 
+        : 'rgba(0, 0, 0, 0.03)',
+      transition: 'all 0.3s ease',
+      '&.Mui-focused': {
+        boxShadow: `0 0 0 2px ${isDarkMode 
+          ? 'rgba(66, 133, 244, 0.4)' 
+          : 'rgba(66, 133, 244, 0.25)'}`,
+        backgroundColor: isDarkMode 
+          ? 'rgba(0, 0, 0, 0.25)' 
+          : 'rgba(255, 255, 255, 0.95)',
+      },
+      '&:hover': {
+        backgroundColor: isDarkMode 
+          ? 'rgba(0, 0, 0, 0.2)' 
+          : 'rgba(0, 0, 0, 0.05)',
+      },
+      '&.Mui-disabled': {
+        opacity: 0.6,
+        backgroundColor: 'transparent',
+      }
+    }
+  }
+
+  const inputProps = {
+    sx: {
+      paddingLeft: 1.5,
+      paddingRight: 1.5,
+      fontSize: '0.9rem',
+      fontFamily: 'monospace',
+      textAlign: 'center',
+    },
+  }
+
   return (
     <>
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          background: (theme) => 
-            theme.palette.mode === 'dark' 
-              ? 'rgba(0, 0, 0, 0.1)' 
-              : 'rgba(0, 0, 0, 0.03)',
-          borderRadius: 1,
-          py: 0.5,
-          px: 1,
-          mx: 1,
+          background: isDarkMode 
+            ? 'linear-gradient(to right, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.1))' 
+            : 'linear-gradient(to right, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.02))',
+          borderRadius: 2,
+          py: 0.75,
+          px: 1.5,
+          mx: 1.5,
+          boxShadow: active 
+            ? (isDarkMode 
+              ? 'inset 0 0 0 1px rgba(66, 133, 244, 0.4)' 
+              : 'inset 0 0 0 1px rgba(66, 133, 244, 0.3)')
+            : 'none',
+          transition: 'all 0.3s ease',
         }}
       >
         <Tooltip
@@ -81,7 +110,7 @@ const PlaybackDimensionControls: React.FC = () => {
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              mr: 1,
+              mr: 1.5,
             }}
             onClick={() =>
               set('editor.overrideWindowSize', {
@@ -91,35 +120,48 @@ const PlaybackDimensionControls: React.FC = () => {
               })
             }
           >
-            <TabUnselectedIcon 
+            <AspectRatioIcon 
               className="height-100" 
               fontSize="small"
               sx={{ 
                 color: active ? 'primary.main' : 'text.secondary',
                 mr: 0.5,
+                transition: 'color 0.3s ease',
               }}
             />
-            <Checkbox 
+            <Switch 
               checked={active} 
               size="small" 
-              disableRipple 
+              color="primary"
               sx={{
-                padding: 0.5,
-                color: 'text.secondary',
-                '&.Mui-checked': {
-                  color: 'primary.main',
+                '& .MuiSwitch-switchBase': {
+                  '&.Mui-checked': {
+                    '& + .MuiSwitch-track': {
+                      opacity: 0.8,
+                    },
+                  },
+                },
+                '& .MuiSwitch-track': {
+                  borderRadius: 10,
+                },
+                '& .MuiSwitch-thumb': {
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                 },
               }}
             />
           </Box>
         </Tooltip>
-        <Box className="flex flex-col flex-initial pe-1" justifyContent="center">
+        
+        <Box className="flex flex-col flex-initial pe-1.5" justifyContent="center">
           <Typography 
             variant="body2"
             sx={{
-              fontWeight: 500,
-              color: active ? 'text.primary' : 'text.secondary',
-              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: active ? 'primary.main' : 'text.secondary',
+              fontSize: '0.75rem',
+              letterSpacing: '0.01em',
+              textTransform: 'uppercase',
+              transition: 'color 0.3s ease',
             }}
           >
             <FormattedMessage id={languageMap.playback.width} />
@@ -139,15 +181,31 @@ const PlaybackDimensionControls: React.FC = () => {
             size="small"
             sx={fieldStyle}
             value={active ? width : panelWidth}
+            variant="outlined"
           />
         </Box>
-        <Box className="flex flex-col flex-initial px-2" justifyContent="center">
+        
+        <Box 
+          sx={{ 
+            mx: 1, 
+            color: active ? 'text.primary' : 'text.secondary',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+          }}
+        >
+          ×
+        </Box>
+        
+        <Box className="flex flex-col flex-initial pe-1.5" justifyContent="center">
           <Typography 
             variant="body2"
             sx={{
-              fontWeight: 500,
-              color: active ? 'text.primary' : 'text.secondary',
-              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: active ? 'primary.main' : 'text.secondary',
+              fontSize: '0.75rem',
+              letterSpacing: '0.01em',
+              textTransform: 'uppercase',
+              transition: 'color 0.3s ease',
             }}
           >
             <FormattedMessage id={languageMap.playback.height} />
@@ -167,8 +225,28 @@ const PlaybackDimensionControls: React.FC = () => {
             size="small"
             sx={fieldStyle}
             value={active ? height : panelHeight}
+            variant="outlined"
           />
         </Box>
+        
+        {active && (
+          <Chip 
+            label={`${width}×${height}`}
+            size="small"
+            color="primary"
+            variant="outlined"
+            sx={{ 
+              ml: 1.5,
+              height: 24,
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              opacity: 0.8,
+              '& .MuiChip-label': {
+                px: 1,
+              },
+            }}
+          />
+        )}
       </Box>
     </>
   )
