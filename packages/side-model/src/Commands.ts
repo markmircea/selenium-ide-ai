@@ -629,6 +629,48 @@ const commands = {
     target: ArgTypes.conditionalExpression,
     value: ArgTypes.loopLimit,
   },
+  scrapeCollection: {
+    name: 'scrape collection',
+    description: 'Extracts data from all elements matching a selector and stores as an array',
+    target: ArgTypes.locator,
+    value: ArgTypes.variableName,
+  },
+  scrapeStructured: {
+    name: 'scrape structured',
+    description: 'Extracts structured data from elements using a mapping of fields to selectors',
+    target: ArgTypes.json,
+    value: ArgTypes.variableName,
+  },
+  scrollAndWait: {
+    name: 'scroll and wait',
+    description: 'Scrolls the page and waits for new content to load',
+    target: ArgTypes.number,
+    value: ArgTypes.waitTime,
+  },
+  transformVariable: {
+    name: 'transform variable',
+    description: 'Transforms a variable using a JavaScript function',
+    target: ArgTypes.variableName,
+    value: ArgTypes.script,
+  },
+  downloadFiles: {
+    name: 'download files',
+    description: 'Downloads files from a list of URLs',
+    target: ArgTypes.variableName,
+    value: ArgTypes.filePath,
+  },
+  exportToJSON: {
+    name: 'export to json',
+    description: 'Exports a variable to a JSON file',
+    target: ArgTypes.variableName,
+    value: ArgTypes.filePath,
+  },
+  exportToCSV: {
+    name: 'export to csv',
+    description: 'Exports a variable containing an array of objects to a CSV file',
+    target: ArgTypes.variableName,
+    value: ArgTypes.filePath,
+  },
 }
 
 export default commands

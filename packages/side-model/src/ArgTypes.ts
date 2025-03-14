@@ -164,6 +164,14 @@ const argTypes = {
     name: 'xpath',
     description: 'The xpath expression to evaluate',
   },
+  filePath: {
+    name: 'file path',
+    description: 'Path to save the file to',
+  },
+  number: {
+    name: 'number',
+    description: 'A numeric value',
+  },
 }
 
 export type ArgTypes = typeof argTypes

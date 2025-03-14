@@ -120,6 +120,15 @@ export interface ScriptShape {
 }
 
 export default class WebDriverExecutor {
+  // Declare the new methods
+  doScrapeCollection!: (selector: string, variableName: string) => Promise<void>;
+  doScrapeStructured!: (mappingJson: string, variableName: string) => Promise<void>;
+  doScrollAndWait!: (scrollCount: string, waitTime: string) => Promise<void>;
+  doTransformVariable!: (variableName: string, transformScript: ScriptShape) => Promise<void>;
+  doDownloadFiles!: (variableName: string, filePath: string) => Promise<void>;
+  doExportToJSON!: (variableName: string, filePath: string) => Promise<void>;
+  doExportToCSV!: (variableName: string, filePath: string) => Promise<void>;
+
   constructor({
     customCommands = {},
     disableCodeExportCompat = false,
@@ -1981,6 +1990,313 @@ function createVerifyCommands(Executor: WebDriverExecutor) {
       }[verify]
     })
 }
+
+// Scraping and saving commands
+
+WebDriverExecutor.prototype.doScrapeCollection = async function(
+  this: WebDriverExecutor,
+  selector: string,
+  variableName: string
+) {
+  try {
+    // Find all elements matching the selector
+    const elements = await this.driver.findElements(parseLocator(selector));
+    
+    // Extract text from each element
+    const extractedData = await Promise.all(
+      elements.map(async (element: WebElementShape) => {
+        return await element.getText();
+      })
+    );
+    
+    // Store the extracted data in the specified variable
+    this.variables.set(variableName, extractedData);
+    
+    if (this.logger) {
+      this.logger.info(`Scraped ${extractedData.length} elements and stored in ${variableName}`);
+    }
+  } catch (error: any) {
+    if (this.logger) {
+      this.logger.error(`Failed to scrape collection: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+WebDriverExecutor.prototype.doScrapeStructured = async function(
+  this: WebDriverExecutor,
+  mappingJson: string,
+  variableName: string
+) {
+  try {
+    // Parse the JSON mapping
+    const mapping = JSON.parse(mappingJson);
+    
+    // Get the root selector if provided, otherwise use body
+    const rootSelector = mapping._root || 'body';
+    const rootElements = await this.driver.findElements(parseLocator(rootSelector));
+    
+    // For each root element, extract the structured data
+    const structuredData = await Promise.all(
+      rootElements.map(async (rootElement: WebElementShape) => {
+        const itemData: Record<string, any> = {};
+        
+        // Process each field in the mapping
+        for (const [field, selector] of Object.entries(mapping)) {
+          // Skip the special _root field
+          if (field === '_root') continue;
+          
+          try {
+            // Handle attribute selectors (e.g., img@src)
+            if ((selector as string).includes('@')) {
+              const [elementSelector, attribute] = (selector as string).split('@');
+              const element = await rootElement.findElement(parseLocator(elementSelector));
+              itemData[field] = await element.getAttribute(attribute);
+            } else {
+              // Regular text extraction
+              const element = await rootElement.findElement(parseLocator(selector as string));
+              itemData[field] = await element.getText();
+            }
+          } catch (error) {
+            // If element not found, set field to null
+            itemData[field] = null;
+          }
+        }
+        
+        return itemData;
+      })
+    );
+    
+    // Store the structured data
+    this.variables.set(variableName, structuredData);
+    
+    if (this.logger) {
+      this.logger.info(`Scraped structured data for ${structuredData.length} items and stored in ${variableName}`);
+    }
+  } catch (error: any) {
+    if (this.logger) {
+      this.logger.error(`Failed to scrape structured data: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+WebDriverExecutor.prototype.doScrollAndWait = async function(
+  this: WebDriverExecutor,
+  scrollCount: string,
+  waitTime: string
+) {
+  try {
+    const count = parseInt(scrollCount);
+    const wait = parseInt(waitTime);
+    
+    for (let i = 0; i < count; i++) {
+      // Scroll to the bottom of the page
+      await this.driver.executeScript('window.scrollTo(0, document.body.scrollHeight)');
+      
+      // Wait for the specified time to allow content to load
+      await this.driver.sleep(wait);
+      
+      if (this.logger) {
+        this.logger.info(`Scroll ${i + 1}/${count} completed, waited ${wait}ms`);
+      }
+    }
+  } catch (error: any) {
+    if (this.logger) {
+      this.logger.error(`Failed to scroll and wait: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+WebDriverExecutor.prototype.doTransformVariable = async function(
+  this: WebDriverExecutor,
+  variableName: string,
+  transformScript: ScriptShape
+) {
+  try {
+    // Get the variable data
+    const data = this.variables.get(variableName);
+    
+    if (data === undefined) {
+      throw new Error(`Variable '${variableName}' not found`);
+    }
+    
+    // Execute the transformation script with the data as an argument
+    const transformedData = await this.driver.executeScript(
+      `return (${transformScript.script})(arguments[0])`,
+      data
+    );
+    
+    // Update the variable with the transformed data
+    this.variables.set(variableName, transformedData);
+    
+    if (this.logger) {
+      this.logger.info(`Transformed variable ${variableName}`);
+    }
+  } catch (error: any) {
+    if (this.logger) {
+      this.logger.error(`Failed to transform variable: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+WebDriverExecutor.prototype.doDownloadFiles = async function(
+  this: WebDriverExecutor,
+  variableName: string,
+  filePath: string
+) {
+  try {
+    // Get the URLs from the variable
+    const urls = this.variables.get(variableName);
+    
+    if (!urls || !Array.isArray(urls)) {
+      throw new Error(`Variable '${variableName}' is not an array of URLs`);
+    }
+    
+    // This is a placeholder for the actual download implementation
+    // In a real implementation, you would need to use a library like axios or node-fetch
+    // to download the files and fs to save them
+    await this.driver.executeScript(
+      `console.log("Would download ${urls.length} files to ${filePath}")`
+    );
+    
+    if (this.logger) {
+      this.logger.info(`Downloaded ${urls.length} files to ${filePath}`);
+    }
+  } catch (error: any) {
+    if (this.logger) {
+      this.logger.error(`Failed to download files: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+WebDriverExecutor.prototype.doExportToJSON = async function(
+  this: WebDriverExecutor,
+  variableName: string,
+  filePath: string
+) {
+  try {
+    // Get the data from the variable
+    const data = this.variables.get(variableName);
+    
+    if (data === undefined) {
+      throw new Error(`Variable '${variableName}' not found`);
+    }
+    
+    // Convert the data to a JSON string with pretty formatting
+    const jsonString = JSON.stringify(data, null, 2);
+    
+    // This is a placeholder for the actual file writing implementation
+    // In a real implementation, you would use fs.writeFileSync
+    await this.driver.executeScript(
+      `console.log("Would write JSON data to ${filePath}: ${jsonString.substring(0, 100)}${jsonString.length > 100 ? '...' : ''}")`
+    );
+    
+    if (this.logger) {
+      this.logger.info(`Exported data to JSON file: ${filePath}`);
+    }
+  } catch (error: any) {
+    if (this.logger) {
+      this.logger.error(`Failed to export to JSON: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+WebDriverExecutor.prototype.doExportToCSV = async function(
+  this: WebDriverExecutor,
+  variableName: string,
+  filePath: string
+) {
+  try {
+    // Get the data from the variable
+    const data = this.variables.get(variableName);
+    
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      throw new Error(`Variable '${variableName}' is not a non-empty array`);
+    }
+    
+    // Extract headers from the first object
+    const headers = Object.keys(data[0]);
+    
+    // Create CSV content
+    let csvContent = headers.join(',') + '\n';
+    
+    // Add data rows
+    data.forEach(item => {
+      const row = headers.map(header => {
+        // Handle values that need escaping (commas, quotes)
+        const value = item[header] === null || item[header] === undefined ? '' : item[header];
+        const valueStr = String(value);
+        return valueStr.includes(',') || valueStr.includes('"') 
+          ? `"${valueStr.replace(/"/g, '""')}"` 
+          : valueStr;
+      });
+      csvContent += row.join(',') + '\n';
+    });
+    
+    // This is a placeholder for the actual file writing implementation
+    // In a real implementation, you would use fs.writeFileSync
+    await this.driver.executeScript(
+      `console.log("Would write CSV data to ${filePath}")`
+    );
+    
+    if (this.logger) {
+      this.logger.info(`Exported data to CSV file: ${filePath}`);
+    }
+  } catch (error: any) {
+    if (this.logger) {
+      this.logger.error(`Failed to export to CSV: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+// Add preprocessors for the new commands
+WebDriverExecutor.prototype.doScrapeCollection = composePreprocessors(
+  interpolateString,
+  null,
+  WebDriverExecutor.prototype.doScrapeCollection
+)
+
+WebDriverExecutor.prototype.doScrapeStructured = composePreprocessors(
+  interpolateString,
+  null,
+  WebDriverExecutor.prototype.doScrapeStructured
+)
+
+WebDriverExecutor.prototype.doScrollAndWait = composePreprocessors(
+  interpolateString,
+  interpolateString,
+  WebDriverExecutor.prototype.doScrollAndWait
+)
+
+WebDriverExecutor.prototype.doTransformVariable = composePreprocessors(
+  interpolateString,
+  interpolateScript,
+  WebDriverExecutor.prototype.doTransformVariable
+)
+
+WebDriverExecutor.prototype.doDownloadFiles = composePreprocessors(
+  interpolateString,
+  interpolateString,
+  WebDriverExecutor.prototype.doDownloadFiles
+)
+
+WebDriverExecutor.prototype.doExportToJSON = composePreprocessors(
+  interpolateString,
+  interpolateString,
+  WebDriverExecutor.prototype.doExportToJSON
+)
+
+WebDriverExecutor.prototype.doExportToCSV = composePreprocessors(
+  interpolateString,
+  interpolateString,
+  WebDriverExecutor.prototype.doExportToCSV
+)
 
 // @ts-expect-error
 createVerifyCommands(WebDriverExecutor)

@@ -1,6 +1,90 @@
 import Commands from '../../Commands'
 
 const commands: typeof Commands = {
+  scrapeCollection: {
+    name: '抓取集合',
+    description: '从匹配选择器的所有元素中提取数据并存储为数组',
+    target: {
+      name: '选择器',
+      description: '用于重复元素的选择器（例如，产品卡片，帖子）'
+    },
+    value: {
+      name: '变量名',
+      description: '存储集合的变量'
+    }
+  },
+  scrapeStructured: {
+    name: '抓取结构化数据',
+    description: '使用字段到选择器的映射从元素中提取结构化数据',
+    target: {
+      name: 'JSON映射',
+      description: '字段名称到选择器的JSON映射（相对或绝对）'
+    },
+    value: {
+      name: '变量名',
+      description: '存储结构化数据的变量'
+    }
+  },
+  scrollAndWait: {
+    name: '滚动并等待',
+    description: '滚动页面并等待新内容加载',
+    target: {
+      name: '滚动次数',
+      description: '要执行的滚动操作次数'
+    },
+    value: {
+      name: '等待时间',
+      description: '每次滚动后等待的时间（毫秒）'
+    }
+  },
+  transformVariable: {
+    name: '转换变量',
+    description: '使用JavaScript函数转换变量',
+    target: {
+      name: '变量名',
+      description: '要转换的变量'
+    },
+    value: {
+      name: '脚本',
+      description: 'JavaScript转换函数'
+    }
+  },
+  downloadFiles: {
+    name: '下载文件',
+    description: '从URL列表下载文件',
+    target: {
+      name: '变量名',
+      description: '包含URL数组的变量'
+    },
+    value: {
+      name: '文件路径',
+      description: '保存文件的目录'
+    }
+  },
+  exportToJSON: {
+    name: '导出为JSON',
+    description: '将变量导出到JSON文件',
+    target: {
+      name: '变量名',
+      description: '包含要导出数据的变量'
+    },
+    value: {
+      name: '文件路径',
+      description: '保存文件的路径'
+    }
+  },
+  exportToCSV: {
+    name: '导出为CSV',
+    description: '将包含对象数组的变量导出到CSV文件',
+    target: {
+      name: '变量名',
+      description: '包含数组数据的变量'
+    },
+    value: {
+      name: '文件路径',
+      description: '保存文件的路径'
+    }
+  },
   acceptAlert: {
     name: 'accept alert',
     description: '影响当前显示的Alert。此命令指示Selenium接受它。',

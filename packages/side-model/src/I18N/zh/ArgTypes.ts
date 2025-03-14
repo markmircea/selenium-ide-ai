@@ -4,6 +4,14 @@ import { ArgTypes } from '../../ArgTypes'
  * CN bindings for the argument types
  */
 export const argTypes: ArgTypes = {
+  filePath: {
+    name: '文件路径',
+    description: '保存文件的路径',
+  },
+  number: {
+    name: '数字',
+    description: '数值',
+  },
   alertText: {
     name: 'alert text',
     description: 'text to check',
