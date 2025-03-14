@@ -20,6 +20,7 @@ const ArgField: FC<CommandArgFieldProps> = (props) => {
     case 'coord string':
     case 'expected value':
     case 'expression':
+    case 'file path':
     case 'iterator variable name':
     case 'json':
     case 'key sequence':
@@ -35,6 +36,7 @@ const ArgField: FC<CommandArgFieldProps> = (props) => {
     case 'value':
     case 'variable name':
     case 'wait time':
+    case 'number':
     case 'window handle':
     case 'xpath':
       return <CommandTextField {...props} />

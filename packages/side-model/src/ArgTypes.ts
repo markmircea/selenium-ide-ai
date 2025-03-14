@@ -165,8 +165,8 @@ const argTypes = {
     description: 'The xpath expression to evaluate',
   },
   filePath: {
-    name: 'file path',
-    description: 'Path to save the file to',
+    name: 'file name',
+    description: 'File will save with this name in the default downloads folder.',
   },
   number: {
     name: 'number',

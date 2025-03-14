@@ -643,7 +643,7 @@ const commands = {
   },
   scrollAndWait: {
     name: 'scroll and wait',
-    description: 'Scrolls the page and waits for new content to load',
+    description: 'Scroll the page and waits for new content to load',
     target: ArgTypes.number,
     value: ArgTypes.waitTime,
   },

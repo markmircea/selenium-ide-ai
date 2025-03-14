@@ -2092,7 +2092,7 @@ WebDriverExecutor.prototype.doScrollAndWait = async function(
     
     for (let i = 0; i < count; i++) {
       // Scroll to the bottom of the page
-      await this.driver.executeScript('window.scrollTo(0, document.body.scrollHeight)');
+      await this.driver.executeScript('for(let i=0; i<5; i++) { window.scrollTo(0, document.body.scrollHeight); }');
       
       // Wait for the specified time to allow content to load
       await this.driver.sleep(wait);
@@ -2155,15 +2155,59 @@ WebDriverExecutor.prototype.doDownloadFiles = async function(
       throw new Error(`Variable '${variableName}' is not an array of URLs`);
     }
     
-    // This is a placeholder for the actual download implementation
-    // In a real implementation, you would need to use a library like axios or node-fetch
-    // to download the files and fs to save them
-    await this.driver.executeScript(
-      `console.log("Would download ${urls.length} files to ${filePath}")`
-    );
+    // Use the browser to download files
+    // We'll create a function that downloads files one by one
+    const results = await this.driver.executeAsyncScript(`
+      const urls = arguments[0];
+      const filePath = arguments[1];
+      const callback = arguments[arguments.length - 1];
+      
+      const results = [];
+      
+      async function downloadFiles() {
+        for (let i = 0; i < urls.length; i++) {
+          try {
+            const url = urls[i];
+            const filename = url.split('/').pop().split('?')[0] || 'file_' + i;
+            
+            // Create a download link and click it
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Add a small delay between downloads
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            results.push({
+              url,
+              filename,
+              status: 'success'
+            });
+          } catch (error) {
+            results.push({
+              url: urls[i],
+              status: 'error',
+              error: error.toString()
+            });
+          }
+        }
+        return results;
+      }
+      
+      downloadFiles().then(results => callback(results));
+    `, urls, filePath);
+    
+    // Store the download results in a new variable
+    this.variables.set(variableName + '_results', results);
     
     if (this.logger) {
-      this.logger.info(`Downloaded ${urls.length} files to ${filePath}`);
+      this.logger.info(`Downloaded ${urls.length} files to browser's download directory`);
+      this.logger.info(`Note: Files are saved to the browser's default download location, not to '${filePath}'`);
+      this.logger.info(`Download results stored in variable '${variableName}_results'`);
     }
   } catch (error: any) {
     if (this.logger) {
@@ -2189,14 +2233,30 @@ WebDriverExecutor.prototype.doExportToJSON = async function(
     // Convert the data to a JSON string with pretty formatting
     const jsonString = JSON.stringify(data, null, 2);
     
-    // This is a placeholder for the actual file writing implementation
-    // In a real implementation, you would use fs.writeFileSync
-    await this.driver.executeScript(
-      `console.log("Would write JSON data to ${filePath}: ${jsonString.substring(0, 100)}${jsonString.length > 100 ? '...' : ''}")`
-    );
+    // Use the browser to trigger a download of the JSON file
+    await this.driver.executeScript(`
+      // Create a Blob containing the JSON data
+      const jsonBlob = new Blob([arguments[0]], { type: 'application/json' });
+      
+      // Create a URL for the Blob
+      const blobUrl = URL.createObjectURL(jsonBlob);
+      
+      // Create a download link and click it
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = arguments[1].split('/').pop() || 'data.json';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the Blob URL
+      URL.revokeObjectURL(blobUrl);
+    `, jsonString, filePath);
     
     if (this.logger) {
-      this.logger.info(`Exported data to JSON file: ${filePath}`);
+      this.logger.info(`Exported data to JSON file: ${filePath.split('/').pop() || 'data.json'}`);
+      this.logger.info(`Note: File is saved to the browser's default download location`);
     }
   } catch (error: any) {
     if (this.logger) {
@@ -2208,15 +2268,48 @@ WebDriverExecutor.prototype.doExportToJSON = async function(
 
 WebDriverExecutor.prototype.doExportToCSV = async function(
   this: WebDriverExecutor,
-  variableName: string,
-  filePath: string
+  targetString: string,
+  filePath?: string
 ) {
   try {
+    // Parse the target string which may contain both variable name and file path
+    let variableName: string;
+    let actualFilePath: string;
+    
+    if (filePath) {
+      // If filePath is provided as a separate parameter, use it
+      variableName = targetString;
+      actualFilePath = filePath;
+    } else if (targetString.includes(',')) {
+      // If target contains a comma, split it into variable name and file path
+      const parts = targetString.split(',');
+      variableName = parts[0].trim();
+      actualFilePath = parts.slice(1).join(',').trim();
+    } else {
+      // If no comma, assume it's just the variable name and use a default filename
+      variableName = targetString;
+      actualFilePath = 'data.csv';
+    }
+    
+    // Log the variable name and its value for debugging
+    if (this.logger) {
+      this.logger.info(`Exporting variable '${variableName}' to CSV`);
+      this.logger.info(`Variable value: ${JSON.stringify(this.variables.get(variableName))}`);
+    }
+    
     // Get the data from the variable
     const data = this.variables.get(variableName);
     
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      throw new Error(`Variable '${variableName}' is not a non-empty array`);
+    if (!data) {
+      throw new Error(`Variable '${variableName}' not found`);
+    }
+    
+    if (!Array.isArray(data)) {
+      throw new Error(`Variable '${variableName}' is not an array (type: ${typeof data})`);
+    }
+    
+    if (data.length === 0) {
+      throw new Error(`Variable '${variableName}' is an empty array`);
     }
     
     // Extract headers from the first object
@@ -2238,14 +2331,30 @@ WebDriverExecutor.prototype.doExportToCSV = async function(
       csvContent += row.join(',') + '\n';
     });
     
-    // This is a placeholder for the actual file writing implementation
-    // In a real implementation, you would use fs.writeFileSync
-    await this.driver.executeScript(
-      `console.log("Would write CSV data to ${filePath}")`
-    );
+    // Use the browser to trigger a download of the CSV file
+    await this.driver.executeScript(`
+      // Create a Blob containing the CSV data
+      const csvBlob = new Blob([arguments[0]], { type: 'text/csv;charset=utf-8;' });
+      
+      // Create a URL for the Blob
+      const blobUrl = URL.createObjectURL(csvBlob);
+      
+      // Create a download link and click it
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = arguments[1].split('/').pop() || 'data.csv';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the Blob URL
+      URL.revokeObjectURL(blobUrl);
+    `, csvContent, actualFilePath);
     
     if (this.logger) {
-      this.logger.info(`Exported data to CSV file: ${filePath}`);
+      this.logger.info(`Exported data from variable '${variableName}' to CSV file: ${actualFilePath.split('/').pop() || 'data.csv'}`);
+      this.logger.info(`Note: File is saved to the browser's default download location`);
     }
   } catch (error: any) {
     if (this.logger) {
