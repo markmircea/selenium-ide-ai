@@ -32,6 +32,20 @@ const polyfill = () => {
     })
     webFrame.executeJavaScript(`window.${key} = window['${key}-polyfill'];`)
   })
+  
+  // Expose the download-files IPC channel to the browser context
+  contextBridge.exposeInMainWorld('electron', {
+    ipcRenderer: {
+      invoke: (channel: string, data: any) => {
+        // Whitelist channels that can be used
+        const validChannels = ['download-files'];
+        if (validChannels.includes(channel)) {
+          return ipcRenderer.invoke(channel, data);
+        }
+        return Promise.reject(new Error(`Invalid channel: ${channel}`));
+      }
+    }
+  });
 }
 
 const recorderProcessors: RecorderPreprocessor[] = []

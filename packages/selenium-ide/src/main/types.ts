@@ -8,6 +8,7 @@ import ChannelsController from './session/controllers/Channels'
 import CommandsController from './session/controllers/Commands'
 import DialogsController from './session/controllers/Dialogs'
 import DriverController from './session/controllers/Driver'
+import FileDownloaderController from './session/controllers/FileDownloader'
 import MenuController from './session/controllers/Menu'
 import OutputFormatsController from './session/controllers/OutputFormats'
 import PlaybackController from './session/controllers/Playback'
@@ -47,6 +48,7 @@ export interface Session {
   commands: CommandsController
   dialogs: DialogsController
   driver: DriverController
+  fileDownloader: FileDownloaderController
   menus: MenuController
   outputFormats: OutputFormatsController
   playback: PlaybackController
@@ -73,4 +75,3 @@ export type SessionApiHandler = (
 export type MenuComponent<Args extends any[] = any[]> = (
   session: Session
 ) => (...args: Args) => Electron.MenuItemConstructorOptions[]
-

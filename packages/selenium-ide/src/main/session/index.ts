@@ -4,6 +4,7 @@ import ChannelsController from './controllers/Channels'
 import CommandsController from './controllers/Commands'
 import DialogsController from './controllers/Dialogs'
 import DriverController from './controllers/Driver'
+import FileDownloaderController from './controllers/FileDownloader'
 import MenuController from './controllers/Menu'
 import PlaybackController from './controllers/Playback'
 import PluginsController from './controllers/Plugins'
@@ -49,6 +50,7 @@ export default async function createSession(app: App): Promise<Session> {
   partialSession.system = new SystemController(partialSession as Session)
   partialSession.tests = new TestsController(partialSession as Session)
   partialSession.windows = new WindowsController(partialSession as Session)
+  partialSession.fileDownloader = new FileDownloaderController(partialSession as Session)
   partialSession.api = Api(partialSession as Session)
 
   const session = partialSession as Session

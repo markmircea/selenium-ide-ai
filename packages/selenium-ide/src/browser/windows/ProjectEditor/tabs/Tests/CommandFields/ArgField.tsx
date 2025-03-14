@@ -21,6 +21,7 @@ const ArgField: FC<CommandArgFieldProps> = (props) => {
     case 'expected value':
     case 'expression':
     case 'file path':
+    case 'file name':
     case 'iterator variable name':
     case 'json':
     case 'key sequence':

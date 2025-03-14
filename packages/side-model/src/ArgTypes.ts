@@ -146,14 +146,14 @@ const argTypes = {
   variableName: {
     name: 'variable name',
     description: `The name of a variable (without brackets). Used to either store 
-    an expression's result in or reference for a check (e.g., with 'assert' or 
+    an expression's result or as a reference for a check (e.g., with 'assert' or 
     'verify')`,
   },
   variableNameOptional: {
     name: 'variable name',
     isOptional: true,
-    description: `The name of a variable (without brackets). Used to either store 
-    an expression's result in or reference for a check (e.g., with 'assert' or 
+    description: `NOT REQUIRED - The name of a variable (without brackets). Used to either store 
+    an expression's result or as a reference for a check (e.g., with 'assert' or 
     'verify')`,
   },
   waitTime: {

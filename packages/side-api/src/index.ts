@@ -2,6 +2,7 @@ import { BaseApi } from './types/base'
 import { commands as channels } from './commands/channels'
 import { commands as dialogs } from './commands/dialogs'
 import { commands as driver } from './commands/driver'
+import { commands as fileDownloader } from './commands/fileDownloader/index'
 import { commands as menus } from './commands/menus'
 import { commands as playback } from './commands/playback'
 import { commands as plugins } from './commands/plugins'
@@ -18,6 +19,7 @@ export interface ApiHoist extends BaseApi {
   channels: typeof channels
   dialogs: typeof dialogs
   driver: typeof driver
+  fileDownloader: typeof fileDownloader
   menus: typeof menus
   playback: typeof playback
   plugins: typeof plugins
@@ -35,6 +37,7 @@ export const api: ApiHoist = {
   channels,
   dialogs,
   driver,
+  fileDownloader,
   menus,
   playback,
   plugins,

@@ -2155,59 +2155,32 @@ WebDriverExecutor.prototype.doDownloadFiles = async function(
       throw new Error(`Variable '${variableName}' is not an array of URLs`);
     }
     
-    // Use the browser to download files
-    // We'll create a function that downloads files one by one
-    const results = await this.driver.executeAsyncScript(`
-      const urls = arguments[0];
-      const filePath = arguments[1];
-      const callback = arguments[arguments.length - 1];
-      
-      const results = [];
-      
-      async function downloadFiles() {
-        for (let i = 0; i < urls.length; i++) {
-          try {
-            const url = urls[i];
-            const filename = url.split('/').pop().split('?')[0] || 'file_' + i;
-            
-            // Create a download link and click it
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Add a small delay between downloads
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            results.push({
-              url,
-              filename,
-              status: 'success'
-            });
-          } catch (error) {
-            results.push({
-              url: urls[i],
-              status: 'error',
-              error: error.toString()
-            });
-          }
+    // Use the renderer's IPC to communicate with the main process
+    const results = await this.driver.executeScript<Array<{url: string; filename?: string; path?: string; status: string; error?: string}>>(`
+      return new Promise((resolve) => {
+        if (window.electron && window.electron.ipcRenderer) {
+          window.electron.ipcRenderer.invoke('download-files', {
+            urls: arguments[0],
+            downloadPath: arguments[1]
+          }).then(resolve);
+        } else {
+          resolve([{ url: 'unknown', status: 'error', error: 'Electron IPC not available' }]);
         }
-        return results;
-      }
-      
-      downloadFiles().then(results => callback(results));
+      });
     `, urls, filePath);
+    // This is executed in the browser context
+    // Access the Electron APIs through contextBridge
+
+
     
     // Store the download results in a new variable
     this.variables.set(variableName + '_results', results);
     
     if (this.logger) {
-      this.logger.info(`Downloaded ${urls.length} files to browser's download directory`);
-      this.logger.info(`Note: Files are saved to the browser's default download location, not to '${filePath}'`);
-      this.logger.info(`Download results stored in variable '${variableName}_results'`);
+      this.logger.info(`Downloaded ${urls.length} files to ${filePath}`);
+      if (results.some((r: {status: string}) => r.status === 'error')) {
+        this.logger.warn(`Some files failed to download. Check ${variableName}_results for details.`);
+      }
     }
   } catch (error: any) {
     if (this.logger) {

@@ -25,8 +25,8 @@ const integerCharacterTokenRegex = /[0-9]/
 export default new Argument({
   name: 'Variable',
   description: `The name of a variable (without brackets). Used to either store 
-    an expression's result in or reference for a check (e.g., with 'assert' or 
-    'verify').`,
+    an expression's result or as a reference for a check (e.g., with 'assert' or 
+    'verify')`,
   identify: (value: string) => typeof value === 'string',
   validate: (value: string) => {
     return parseVariable(value) === value.length
