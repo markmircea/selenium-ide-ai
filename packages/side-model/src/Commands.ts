@@ -172,7 +172,10 @@ const commands = {
   click: {
     name: 'click',
     description: `Clicks on a target element (e.g., a link, button, checkbox, or radio button).`,
-    target: ArgTypes.locator,
+    target: {
+      name: 'locator',
+      description: 'An element locator that identifies the element to click. Can use id, name, css selector, or xpath (e.g., "id=submitButton", "css=button.primary", "//button[contains(text(),"Submit")]")'
+    },
   },
   clickAt: {
     name: 'click at',
@@ -253,8 +256,15 @@ const commands = {
         currently selected frame or window. The script fragment will be executed 
         as the body of an anonymous function.  To store the return value, use 
         the 'return' keyword and provide a variable name in the value input field.`,
-    target: ArgTypes.script,
-    value: ArgTypes.variableNameOptional,
+    target: {
+      name: 'script',
+      description: 'JavaScript code to execute. Can access page elements and variables. Examples: "return document.title", "window.scrollTo(0, 500)", "return document.querySelector(\'.price\').textContent"'
+    },
+    value: {
+      name: 'variable name',
+      isOptional: true,
+      description: 'Optional variable name to store the result. Only needed if your script returns a value with the "return" keyword. Example: "pageTitle" would store the result in ${pageTitle}'
+    },
   },
   executeAsyncScript: {
     name: 'execute async script',
@@ -263,14 +273,27 @@ const commands = {
         executed as the body of an anonymous function and must return a Promise. 
         The Promise result will be saved on the variable if you use the 'return' 
         keyword.`,
-    target: ArgTypes.script,
-    value: ArgTypes.variableNameOptional,
+    target: {
+      name: 'script',
+      description: 'Async JavaScript code to execute. Must include the "callback" parameter and call it when done. Example: "const result = await fetch(\'/api/data\'); callback(result.json());" or "return new Promise(resolve => setTimeout(() => resolve(\'done\'), 1000))"'
+    },
+    value: {
+      name: 'variable name',
+      isOptional: true,
+      description: 'Optional variable name to store the Promise result. Example: "apiData" would store the async result in ${apiData}'
+    },
   },
   forEach: {
     name: 'for each',
-    description: `Create a loop that executes the proceeding commands for each item in a given collection.`,
-    target: ArgTypes.arrayVariableName,
-    value: ArgTypes.iteratorVariableName,
+    description: `Create a loop that executes the proceeding commands for each item in a given collection. Must be terminated with an "end" command.`,
+    target: {
+      name: 'array variable name',
+      description: 'The name of a variable containing an array to iterate over. Example: "myArray" to iterate over ${myArray} which might contain [1, 2, 3]'
+    },
+    value: {
+      name: 'iterator variable name',
+      description: 'The name to assign to each item during iteration. Example: "item" will make ${item} available in the loop body with the current array element'
+    },
   },
   if: {
     name: 'if',
@@ -478,8 +501,12 @@ const commands = {
         the visible text.  Chrome only: If a file path is given it will be 
         uploaded to the input (for type=file), NOTE: XPath locators are not 
         supported.`,
-    target: ArgTypes.locator,
-    value: ArgTypes.value,
+        target: ArgTypes.locator,
+
+    value: {
+      name: 'value',
+      description: 'The text to type into the field.'
+    },
   },
   uncheck: {
     name: 'uncheck',
@@ -638,7 +665,11 @@ const commands = {
   scrapeStructured: {
     name: 'scrape structured',
     description: 'Extracts structured data from elements using a mapping of fields to selectors',
-    target: ArgTypes.json,
+    target: {
+      name: 'json',
+      description: 'JSON format for matching fields to selectors: (e.g., {"_root": "css=article", "title": "css=a[slot=`title`]", "author": "css=a[href^=`/user/`]", "img": "css=img.i18n-post-media-img@src", "videoURL": "css=shreddit-player-2@src"}'
+    },
+    
     value: ArgTypes.variableName,
   },
   scrollAndWait: {

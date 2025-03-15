@@ -11,7 +11,7 @@ import React, { FC, useEffect } from 'react'
 import { updateField, updateFieldAutoComplete } from './utils'
 import { CommandArgFieldProps } from '../types'
 import languageMap from 'browser/I18N/keys'
-import { useIntl } from 'react-intl'
+import { FormattedMessage, useIntl } from 'react-intl'
 
 type PluralField = 'targets' | 'values'
 
@@ -38,7 +38,7 @@ const CommandLocatorField: FC<CommandArgFieldProps> = ({
   }
   useEffect(() => {
     setLocalValue(command[fieldName])
-  }, [command.id])
+  }, [command.id, command[fieldName]])
 
   // 处理label标签
   const handleLabel = (value: string) => {
@@ -99,24 +99,39 @@ const CommandLocatorField: FC<CommandArgFieldProps> = ({
         text-overflow="ellipsis"
         value={localValue || ''}
       />
-      <IconButton
-        className="ms-4"
-        disabled={disabled}
-        onClick={() =>
-          window.sideAPI.recorder.requestHighlightElement(fieldName)
-        }
+      <Tooltip
+        className="flex-initial ms-4 my-auto"
+        title={<FormattedMessage id={languageMap.testCore.findInPage} />}
+        placement="top-end"
       >
-        <FindInPageIcon />
-      </IconButton>
-      <IconButton
-        disabled={disabled}
-        onClick={() =>
-          window.sideAPI.recorder.requestSelectElement(true, fieldName)
-        }
+        <IconButton
+          disabled={disabled}
+          onClick={() =>
+            window.sideAPI.recorder.requestHighlightElement(fieldName)
+          }
+        >
+          <FindInPageIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip
+        className="flex-initial my-auto"
+        title={<FormattedMessage id={languageMap.testCore.selectElement} />}
+        placement="top-end"
       >
-        <AddToHomeScreenIcon />
-      </IconButton>
-      <Tooltip className="mx-2 my-auto" title={fullnote} placement="top-end">
+        <IconButton
+          disabled={disabled}
+          onClick={() =>
+            window.sideAPI.recorder.requestSelectElement(true, fieldName)
+          }
+        >
+          <AddToHomeScreenIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip 
+        className="mx-2 my-auto" 
+        title={<FormattedMessage id={`commandMap.${command.command}.${fieldName}.description`} />} 
+        placement="top-end"
+      >
         <HelpCenter />
       </Tooltip>
     </FormControl>

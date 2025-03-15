@@ -195,6 +195,8 @@ const testCore = {
   playFromHere: 'Play From Here',
   playThisStep: 'Play This Step',
   playFromStart: 'Play From Start',
+  findInPage: 'Find element in page',
+  selectElement: 'Select an element on the page',
 }
 
 export const language = {

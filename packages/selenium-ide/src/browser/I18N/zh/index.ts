@@ -201,6 +201,8 @@ const testCore = {
   playFromHere: '从此处回放',
   playThisStep: '回放此步骤',
   playFromStart: '从头开始回放',
+  findInPage: '在页面中查找元素',
+  selectElement: '在页面上选择一个元素',
 }
 
 export const language: LanguageMap = {
