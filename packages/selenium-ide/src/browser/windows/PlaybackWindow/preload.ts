@@ -33,12 +33,12 @@ const polyfill = () => {
     webFrame.executeJavaScript(`window.${key} = window['${key}-polyfill'];`)
   })
   
-  // Expose the download-files IPC channel to the browser context
+  // Expose the download-files and save-file IPC channels to the browser context
   contextBridge.exposeInMainWorld('electron', {
     ipcRenderer: {
       invoke: (channel: string, data: any) => {
         // Whitelist channels that can be used
-        const validChannels = ['download-files'];
+        const validChannels = ['download-files', 'save-file'];
         if (validChannels.includes(channel)) {
           return ipcRenderer.invoke(channel, data);
         }

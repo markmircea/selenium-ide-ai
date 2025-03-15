@@ -655,21 +655,30 @@ const commands = {
   },
   downloadFiles: {
     name: 'download files',
-    description: 'Downloads files from a list of URLs',
+    description: 'Downloads files from an array of URLs',
     target: ArgTypes.variableName,
-    value: ArgTypes.filePath,
+    value: {
+      name: 'file path',
+      description: 'Absolute or relative path where the file(s) will be saved (e.g., C:/Users/username/Downloads/ or ./exports/)'
+    },
   },
   exportToJSON: {
     name: 'export to json',
     description: 'Exports a variable to a JSON file',
     target: ArgTypes.variableName,
-    value: ArgTypes.filePath,
+    value: {
+      name: 'file path',
+      description: 'Absolute or relative path where the file will be saved (e.g., C:/Users/username/Downloads/data.json or ./exports/data.json)'
+    },
   },
   exportToCSV: {
     name: 'export to csv',
     description: 'Exports a variable containing an array of objects to a CSV file',
     target: ArgTypes.variableName,
-    value: ArgTypes.filePath,
+    value: {
+      name: 'file path',
+      description: 'Absolute or relative path where the file will be saved (e.g., C:/Users/username/Downloads/data.csv or ./exports/data.csv)'
+    },
   },
 }
 

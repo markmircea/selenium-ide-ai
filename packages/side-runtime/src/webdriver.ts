@@ -120,7 +120,6 @@ export interface ScriptShape {
 }
 
 export default class WebDriverExecutor {
-  // Declare the new methods
   doScrapeCollection!: (selector: string, variableName: string) => Promise<void>;
   doScrapeStructured!: (mappingJson: string, variableName: string) => Promise<void>;
   doScrollAndWait!: (scrollCount: string, waitTime: string) => Promise<void>;
@@ -2206,30 +2205,44 @@ WebDriverExecutor.prototype.doExportToJSON = async function(
     // Convert the data to a JSON string with pretty formatting
     const jsonString = JSON.stringify(data, null, 2);
     
-    // Use the browser to trigger a download of the JSON file
-    await this.driver.executeScript(`
-      // Create a Blob containing the JSON data
-      const jsonBlob = new Blob([arguments[0]], { type: 'application/json' });
-      
-      // Create a URL for the Blob
-      const blobUrl = URL.createObjectURL(jsonBlob);
-      
-      // Create a download link and click it
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = arguments[1].split('/').pop() || 'data.json';
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the Blob URL
-      URL.revokeObjectURL(blobUrl);
+    // Use Electron IPC to save the file to a specific location
+    const result = await this.driver.executeScript<{status: string; error?: string}>(`
+      return new Promise((resolve) => {
+        if (window.electron && window.electron.ipcRenderer) {
+          const path = arguments[1] || 'data.json';
+          
+          window.electron.ipcRenderer.invoke('save-file', {
+            content: arguments[0],
+            filePath: path,
+            mimeType: 'application/json'
+          }).then(resolve);
+        } else {
+          // Fallback to browser download if Electron IPC is not available
+          const jsonBlob = new Blob([arguments[0]], { type: 'application/json' });
+          const blobUrl = URL.createObjectURL(jsonBlob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = arguments[1].split('/').pop() || 'data.json';
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+          
+          resolve({ status: 'success', path: 'browser-download' });
+        }
+      });
     `, jsonString, filePath);
     
     if (this.logger) {
-      this.logger.info(`Exported data to JSON file: ${filePath.split('/').pop() || 'data.json'}`);
-      this.logger.info(`Note: File is saved to the browser's default download location`);
+      if (result.status === 'success') {
+        this.logger.info(`Exported data to JSON file: ${filePath}`);
+      } else {
+        this.logger.warn(`Export to JSON completed with status: ${result.status}`);
+        if (result.error) {
+          this.logger.error(`Error: ${result.error}`);
+        }
+      }
     }
   } catch (error: any) {
     if (this.logger) {
@@ -2241,35 +2254,10 @@ WebDriverExecutor.prototype.doExportToJSON = async function(
 
 WebDriverExecutor.prototype.doExportToCSV = async function(
   this: WebDriverExecutor,
-  targetString: string,
-  filePath?: string
+  variableName: string,
+  filePath: string
 ) {
   try {
-    // Parse the target string which may contain both variable name and file path
-    let variableName: string;
-    let actualFilePath: string;
-    
-    if (filePath) {
-      // If filePath is provided as a separate parameter, use it
-      variableName = targetString;
-      actualFilePath = filePath;
-    } else if (targetString.includes(',')) {
-      // If target contains a comma, split it into variable name and file path
-      const parts = targetString.split(',');
-      variableName = parts[0].trim();
-      actualFilePath = parts.slice(1).join(',').trim();
-    } else {
-      // If no comma, assume it's just the variable name and use a default filename
-      variableName = targetString;
-      actualFilePath = 'data.csv';
-    }
-    
-    // Log the variable name and its value for debugging
-    if (this.logger) {
-      this.logger.info(`Exporting variable '${variableName}' to CSV`);
-      this.logger.info(`Variable value: ${JSON.stringify(this.variables.get(variableName))}`);
-    }
-    
     // Get the data from the variable
     const data = this.variables.get(variableName);
     
@@ -2304,30 +2292,45 @@ WebDriverExecutor.prototype.doExportToCSV = async function(
       csvContent += row.join(',') + '\n';
     });
     
-    // Use the browser to trigger a download of the CSV file
-    await this.driver.executeScript(`
-      // Create a Blob containing the CSV data
-      const csvBlob = new Blob([arguments[0]], { type: 'text/csv;charset=utf-8;' });
-      
-      // Create a URL for the Blob
-      const blobUrl = URL.createObjectURL(csvBlob);
-      
-      // Create a download link and click it
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = arguments[1].split('/').pop() || 'data.csv';
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the Blob URL
-      URL.revokeObjectURL(blobUrl);
-    `, csvContent, actualFilePath);
+    // Use Electron IPC to save the file to a specific location
+    const result = await this.driver.executeScript<{status: string; error?: string}>(`
+      return new Promise((resolve) => {
+        if (window.electron && window.electron.ipcRenderer) {
+          // Create a temporary file name if none provided
+          const path = arguments[1] || 'data.csv';
+          
+          window.electron.ipcRenderer.invoke('save-file', {
+            content: arguments[0],
+            filePath: path,
+            mimeType: 'text/csv;charset=utf-8;'
+          }).then(resolve);
+        } else {
+          // Fallback to browser download if Electron IPC is not available
+          const csvBlob = new Blob([arguments[0]], { type: 'text/csv;charset=utf-8;' });
+          const blobUrl = URL.createObjectURL(csvBlob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = arguments[1].split('/').pop() || 'data.csv';
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+          
+          resolve({ status: 'success', path: 'browser-download' });
+        }
+      });
+    `, csvContent, filePath);
     
     if (this.logger) {
-      this.logger.info(`Exported data from variable '${variableName}' to CSV file: ${actualFilePath.split('/').pop() || 'data.csv'}`);
-      this.logger.info(`Note: File is saved to the browser's default download location`);
+      if (result.status === 'success') {
+        this.logger.info(`Exported data to CSV file: ${filePath}`);
+      } else {
+        this.logger.warn(`Export to CSV completed with status: ${result.status}`);
+        if (result.error) {
+          this.logger.error(`Error: ${result.error}`);
+        }
+      }
     }
   } catch (error: any) {
     if (this.logger) {

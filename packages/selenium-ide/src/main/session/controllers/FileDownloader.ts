@@ -24,10 +24,83 @@ export default class FileDownloaderController extends BaseController {
     ipcMain.handle('download-files', async (_event, { urls, downloadPath }: { urls: string[], downloadPath: string }) => {
       return await this.downloadFiles(urls, downloadPath);
     });
+    
+    ipcMain.handle('save-file', async (_event, { content, filePath, mimeType }: { content: string, filePath: string, mimeType: string }) => {
+      return await this.saveFile(content, filePath, mimeType);
+    });
+  }
+  
+  async saveFile(content: string, filePath: string, _mimeType: string): Promise<{ status: string; path?: string; error?: string }> {
+    console.log(`Saving file to path: ${filePath}`);
+    
+    try {
+      // Handle special characters and normalize the path
+      let targetPath = filePath.trim();
+      
+      // Normalize path separators (handle both / and \)
+      targetPath = path.normalize(targetPath);
+      
+      // Extract directory
+      const parsedPath = path.parse(targetPath);
+      const targetDir = parsedPath.dir || process.cwd();
+      
+      // If the path is relative, make it absolute
+      if (!path.isAbsolute(targetPath)) {
+        targetPath = path.resolve(process.cwd(), targetPath);
+      }
+      
+      console.log(`Resolved file path: ${targetPath}`);
+      
+      // Create the directory if it doesn't exist
+      try {
+        fs.mkdirSync(targetDir, { recursive: true });
+        console.log(`Successfully created directory: ${targetDir}`);
+      } catch (dirError) {
+        console.error(`Failed to create directory ${targetDir}: ${dirError instanceof Error ? dirError.message : String(dirError)}`);
+        throw dirError;
+      }
+      
+      // Write the file
+      fs.writeFileSync(targetPath, content, 'utf8');
+      console.log(`Successfully saved file to: ${targetPath}`);
+      
+      return {
+        status: 'success',
+        path: targetPath
+      };
+    } catch (error) {
+      console.error(`Error saving file: ${error instanceof Error ? error.message : String(error)}`);
+      
+      // Try using the fallback directory
+      try {
+        const homeDir = require('os').homedir();
+        const fallbackDir = path.join(homeDir, 'Downloads', 'selenium-ide-exports');
+        fs.mkdirSync(fallbackDir, { recursive: true });
+        
+        // Extract just the filename from the path
+        const parsedPath = path.parse(filePath);
+        const filename = parsedPath.base;
+        const fallbackPath = path.join(fallbackDir, filename);
+        
+        fs.writeFileSync(fallbackPath, content, 'utf8');
+        console.log(`Saved file to fallback location: ${fallbackPath}`);
+        
+        return {
+          status: 'success',
+          path: fallbackPath
+        };
+      } catch (fallbackError) {
+        console.error(`Failed to save to fallback location: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
+        return {
+          status: 'error',
+          error: `Failed to save file: ${error instanceof Error ? error.message : String(error)}`
+        };
+      }
+    }
   }
 
   async downloadFiles(urls: string[], downloadPath: string): Promise<DownloadResult[]> {
-    const results = [];
+    const results: DownloadResult[] = [];
     
     console.log(`Starting download of ${urls.length} files to path: ${downloadPath}`);
     
@@ -41,6 +114,9 @@ export default class FileDownloaderController extends BaseController {
       
       // Handle special characters and normalize the path
       let targetPath = downloadPath.trim();
+      
+      // Normalize path separators (handle both / and \)
+      targetPath = path.normalize(targetPath);
       
       // If the path is relative, make it absolute
       if (!path.isAbsolute(targetPath)) {
