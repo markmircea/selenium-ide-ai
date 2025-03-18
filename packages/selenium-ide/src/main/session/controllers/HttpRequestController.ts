@@ -43,9 +43,9 @@ export default class HttpRequestController extends BaseController {
         try {
           const parsedUrl = new URL(requestUrl);
           
-          // Add content-type header if provided
+          // Add content-type header if provided and there's a body
           const requestHeaders = { ...headers };
-          if (contentType && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+          if (contentType && body) {
             requestHeaders['Content-Type'] = contentType;
           }
           
@@ -121,14 +121,20 @@ export default class HttpRequestController extends BaseController {
             });
           });
           
-        // Send request body if applicable
-        if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        // Send request body if provided
+        if (body) {
           // If the body is a JSON string with formatting (newlines, etc.), parse it and stringify it again
           // to remove formatting characters while preserving the JSON structure
           if (contentType && contentType.includes('application/json')) {
             try {
+              // First, sanitize any control characters that might cause JSON parsing to fail
+              const sanitizedBody = body.replace(/[\u0000-\u001F\u007F-\u009F]/g, (char: string) => {
+                // Replace control characters with their escaped Unicode representation
+                return `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`;
+              });
+              
               // Try to parse the body as JSON to remove formatting
-              const parsedBody = JSON.parse(body);
+              const parsedBody = JSON.parse(sanitizedBody);
               // Stringify it again without pretty-printing
               req.write(JSON.stringify(parsedBody));
             } catch (e) {

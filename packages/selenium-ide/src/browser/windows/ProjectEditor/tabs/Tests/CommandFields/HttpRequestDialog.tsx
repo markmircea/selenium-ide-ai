@@ -15,6 +15,12 @@ import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
+import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft'
+import Alert from '@mui/material/Alert'
+import Paper from '@mui/material/Paper'
+import Typography from '@mui/material/Typography'
+import Divider from '@mui/material/Divider'
+import Tooltip from '@mui/material/Tooltip'
 import { useIntl } from 'react-intl'
 
 export interface HttpRequestConfig {
@@ -25,6 +31,27 @@ export interface HttpRequestConfig {
   contentType: string;
   timeout?: number;
 }
+
+// Helper function to format JSON with proper indentation
+const formatJSON = (jsonString: string): string => {
+  try {
+    const obj = JSON.parse(jsonString);
+    return JSON.stringify(obj, null, 2);
+  } catch (e) {
+    // Return the original string if it's not valid JSON
+    return jsonString;
+  }
+};
+
+// Helper function to validate JSON
+const isValidJSON = (jsonString: string): boolean => {
+  try {
+    JSON.parse(jsonString);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
 
 interface HttpRequestDialogProps {
   open: boolean;
@@ -54,6 +81,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   const [activeTab, setActiveTab] = useState(0)
   const [headerKey, setHeaderKey] = useState('')
   const [headerValue, setHeaderValue] = useState('')
+  const [jsonError, setJsonError] = useState<string | null>(null)
 
   // Reset form when dialog opens with new initialConfig
   useEffect(() => {
@@ -84,10 +112,21 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   }, [open, initialConfig])
 
   const handleChange = (field: keyof HttpRequestConfig) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.value;
     setConfig({
       ...config,
-      [field]: event.target.value,
+      [field]: newValue,
     })
+    
+    // Validate JSON if the field is body and content type is JSON
+    if (field === 'body' && config.contentType === 'application/json' && newValue.trim()) {
+      try {
+        JSON.parse(newValue);
+        setJsonError(null);
+      } catch (e) {
+        setJsonError((e as Error).message);
+      }
+    }
   }
 
   const handleMethodChange = (event: any) => {
@@ -98,10 +137,39 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   }
 
   const handleContentTypeChange = (event: any) => {
+    const newContentType = event.target.value;
     setConfig({
       ...config,
-      contentType: event.target.value,
+      contentType: newContentType,
     })
+    
+    // Validate JSON if the new content type is JSON and there's a body
+    if (newContentType === 'application/json' && config.body.trim()) {
+      try {
+        JSON.parse(config.body);
+        setJsonError(null);
+      } catch (e) {
+        setJsonError((e as Error).message);
+      }
+    } else {
+      setJsonError(null);
+    }
+  }
+  
+  // Format JSON in the body textarea
+  const handleFormatJSON = () => {
+    if (config.contentType === 'application/json' && config.body.trim()) {
+      try {
+        const formattedJSON = formatJSON(config.body);
+        setConfig({
+          ...config,
+          body: formattedJSON,
+        });
+        setJsonError(null);
+      } catch (e) {
+        setJsonError((e as Error).message);
+      }
+    }
   }
 
   const handleTabChange = (_: React.ChangeEvent<{}>, newValue: number) => {
@@ -224,19 +292,41 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
 
         {activeTab === 1 && (
           <Box sx={{ mt: 2 }}>
-            <FormControl sx={{ mb: 2, minWidth: 200 }}>
-              <InputLabel>{intl.formatMessage({ id: 'Content Type' })}</InputLabel>
-              <Select
-                value={config.contentType}
-                onChange={handleContentTypeChange}
-                label={intl.formatMessage({ id: 'Content Type' })}
-              >
-                <MenuItem value="application/json">application/json</MenuItem>
-                <MenuItem value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</MenuItem>
-                <MenuItem value="text/plain">text/plain</MenuItem>
-                <MenuItem value="multipart/form-data">multipart/form-data</MenuItem>
-              </Select>
-            </FormControl>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'flex-start' }}>
+              <FormControl sx={{ minWidth: 200 }}>
+                <InputLabel>{intl.formatMessage({ id: 'Content Type' })}</InputLabel>
+                <Select
+                  value={config.contentType}
+                  onChange={handleContentTypeChange}
+                  label={intl.formatMessage({ id: 'Content Type' })}
+                >
+                  <MenuItem value="application/json">application/json</MenuItem>
+                  <MenuItem value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</MenuItem>
+                  <MenuItem value="text/plain">text/plain</MenuItem>
+                  <MenuItem value="multipart/form-data">multipart/form-data</MenuItem>
+                </Select>
+              </FormControl>
+              
+              {config.contentType === 'application/json' && (
+                <Tooltip title={intl.formatMessage({ id: 'Format JSON' })}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<FormatAlignLeftIcon />}
+                    onClick={handleFormatJSON}
+                    sx={{ mt: 1 }}
+                  >
+                    {intl.formatMessage({ id: 'Format JSON' })}
+                  </Button>
+                </Tooltip>
+              )}
+            </Box>
+            
+            {jsonError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {intl.formatMessage({ id: 'JSON Error' })}: {jsonError}
+              </Alert>
+            )}
+            
             <TextField
               label={intl.formatMessage({ id: 'Request Body' })}
               value={config.body}
@@ -244,6 +334,13 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
               multiline
               rows={8}
               fullWidth
+              error={Boolean(jsonError)}
+              sx={{
+                fontFamily: config.contentType === 'application/json' ? 'monospace' : 'inherit',
+                '& .MuiInputBase-input': {
+                  fontFamily: config.contentType === 'application/json' ? 'monospace' : 'inherit',
+                },
+              }}
             />
           </Box>
         )}
@@ -257,7 +354,58 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
               onChange={handleTimeoutChange}
               sx={{ mb: 2 }}
             />
-            {/* Additional advanced options can be added here */}
+            
+            <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
+              {intl.formatMessage({ id: 'Request Preview' })}
+            </Typography>
+            <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+              <Typography variant="subtitle2" color="primary">
+                {config.method} {config.url}
+              </Typography>
+              
+              <Divider sx={{ my: 1 }} />
+              
+              <Typography variant="subtitle2">
+                {intl.formatMessage({ id: 'Headers' })}:
+              </Typography>
+              <Box sx={{ pl: 2, fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                {config.contentType && config.body && (
+                  <Typography variant="body2">Content-Type: {config.contentType}</Typography>
+                )}
+                {Object.entries(config.headers).map(([key, value]) => (
+                  <Typography key={key} variant="body2">{key}: {value}</Typography>
+                ))}
+                {Object.keys(config.headers).length === 0 && !config.contentType && (
+                  <Typography variant="body2" color="text.secondary">
+                    {intl.formatMessage({ id: 'No headers defined' })}
+                  </Typography>
+                )}
+              </Box>
+              
+              {config.body && (
+                <>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="subtitle2">
+                    {intl.formatMessage({ id: 'Body' })}:
+                  </Typography>
+                  <Box 
+                    sx={{ 
+                      pl: 2, 
+                      fontFamily: 'monospace', 
+                      fontSize: '0.875rem',
+                      maxHeight: '150px',
+                      overflow: 'auto',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all'
+                    }}
+                  >
+                    {config.contentType === 'application/json' && isValidJSON(config.body) 
+                      ? formatJSON(config.body)
+                      : config.body}
+                  </Box>
+                </>
+              )}
+            </Paper>
           </Box>
         )}
       </DialogContent>
