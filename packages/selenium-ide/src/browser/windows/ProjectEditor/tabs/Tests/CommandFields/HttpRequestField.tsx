@@ -43,7 +43,13 @@ const HttpRequestField: FC<CommandFieldProps> = ({
   }
 
   const handleSaveConfig = (config: any) => {
-    updateText(testID, command.id)(JSON.stringify(config))
+    // Create a mock event object with the stringified config as the target.value
+    const mockEvent = {
+      target: {
+        value: JSON.stringify(config)
+      }
+    }
+    updateText(testID, command.id)(mockEvent)
     setDialogOpen(false)
   }
 
