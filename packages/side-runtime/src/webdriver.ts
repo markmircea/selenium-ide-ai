@@ -2584,8 +2584,13 @@ WebDriverExecutor.prototype.doHttpRequest = async function(
   variableName: string
 ) {
   try {
-    // Parse the configuration
-    const config = JSON.parse(configJson);
+    // Parse the configuration - handle control characters by replacing them
+    const sanitizedJson = configJson.replace(/[\u0000-\u001F\u007F-\u009F]/g, (char) => {
+      // Replace control characters with their escaped Unicode representation
+      return `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`;
+    });
+    
+    const config = JSON.parse(sanitizedJson);
     
     // Use Electron IPC to send the request through the main process
     const response = await this.driver.executeScript<any>(`

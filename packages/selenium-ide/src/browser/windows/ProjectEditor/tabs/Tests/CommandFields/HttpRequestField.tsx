@@ -1,9 +1,9 @@
 import FormControl from '@mui/material/FormControl'
 import SettingsIcon from '@mui/icons-material/Settings'
-import TextField from 'browser/components/UncontrolledTextField'
-import React, { FC, useState } from 'react'
+import TextField from '@mui/material/TextField'
+import React, { FC, useState, useEffect } from 'react'
 import { CommandFieldProps } from '../types'
-import { updateField } from './utils'
+import { updateField, setField } from './utils'
 import Tooltip from '@mui/material/Tooltip'
 import IconButton from '@mui/material/IconButton'
 import HttpRequestDialog from './HttpRequestDialog'
@@ -24,7 +24,19 @@ const HttpRequestField: FC<CommandFieldProps> = ({
 }) => {
   const intl = useIntl()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [displayValue, setDisplayValue] = useState('')
   const updateText = updateField(fieldName)
+  const setValue = setField(fieldName)
+  
+  // Set the display value to the raw JSON
+  useEffect(() => {
+    try {
+      setDisplayValue(command[fieldName] as string || '')
+    } catch (error) {
+      console.error('Error setting display value:', error)
+      setDisplayValue('')
+    }
+  }, [command, fieldName])
   
   // Get the label from the command description
   const fullNote = note || intl.formatMessage({
@@ -43,13 +55,13 @@ const HttpRequestField: FC<CommandFieldProps> = ({
   }
 
   const handleSaveConfig = (config: any) => {
-    // Create a mock event object with the stringified config as the target.value
-    const mockEvent = {
-      target: {
-        value: JSON.stringify(config)
-      }
-    }
-    updateText(testID, command.id)(mockEvent)
+    // Directly set the value instead of using the event-based updateText
+    const configStr = JSON.stringify(config)
+    setValue(testID, command.id)(configStr)
+    
+    // Update the display value immediately with the raw JSON
+    setDisplayValue(configStr)
+    
     setDialogOpen(false)
   }
 
@@ -62,12 +74,16 @@ const HttpRequestField: FC<CommandFieldProps> = ({
         label={label}
         InputLabelProps={inputLabelProps}
         name={fieldName}
-        onChange={updateText(testID, command.id)}
+        onChange={(e) => {
+          setDisplayValue(e.target.value)
+          updateText(testID, command.id)(e)
+        }}
         onContextMenu={() => {
           window.sideAPI.menus.open('textField')
         }}
         size="small"
-        value={command[fieldName]}
+        margin="dense"
+        value={displayValue}
       />
       <Tooltip
         className="flex-initial ms-4 my-auto"
@@ -85,7 +101,14 @@ const HttpRequestField: FC<CommandFieldProps> = ({
         open={dialogOpen}
         onClose={handleCloseDialog}
         onSave={handleSaveConfig}
-        initialConfig={command[fieldName] ? JSON.parse(command[fieldName] as string) : {}}
+        initialConfig={(() => {
+          try {
+            return command[fieldName] ? JSON.parse(command[fieldName] as string) : {}
+          } catch (error) {
+            console.error('Error parsing HTTP request config:', error)
+            return {}
+          }
+        })()}
       />
     </FormControl>
   )

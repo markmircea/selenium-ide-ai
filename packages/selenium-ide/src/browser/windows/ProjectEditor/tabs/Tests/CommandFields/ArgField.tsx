@@ -17,6 +17,16 @@ const ArgField: FC<CommandArgFieldProps> = (props) => {
     return <HttpRequestField {...props} />
   }
   
+  // Special case for HTTP request value field (variable name to store response)
+  if (command === 'httpRequest' && fieldName === 'value') {
+    return (
+      <CommandTextField 
+        {...props} 
+        note="Variable name to store the HTTP response"
+      />
+    )
+  }
+  
   // @ts-expect-error our shape traversal kinda sucks :(
   const arg = commands[command][fieldName]?.name as ArgNames
   switch (arg) {

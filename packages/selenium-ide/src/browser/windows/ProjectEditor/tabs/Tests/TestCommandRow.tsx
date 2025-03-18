@@ -6,9 +6,10 @@ import { CommandShape } from '@seleniumhq/side-model'
 import { PlaybackEventShapes } from '@seleniumhq/side-runtime'
 import { camelToTitleCase } from '@seleniumhq/side-api/dist/helpers/string'
 import ReorderableListItem from 'browser/components/ReorderableListItem'
-import React from 'react'
+import React, { useState } from 'react'
 import { ReorderPreview } from 'browser/hooks/useReorderPreview'
 import CommandOverlay from './TestCommandOverlay'
+import HttpRequestDialog from './CommandFields/HttpRequestDialog'
 
 const {
   state: { updateStepSelection },
@@ -88,6 +89,7 @@ const CommandRow: React.FC<CommandRowProps> = ({
   resetPreview,
   selected,
 }) => {
+  const [httpDialogOpen, setHttpDialogOpen] = useState(false)
   if (typeof command != 'string') {
     command = '//unknown - could not process'
   }
@@ -103,6 +105,26 @@ const CommandRow: React.FC<CommandRowProps> = ({
     .concat(isDisabled ? ['o-50'] : [])
     .join(' ')
   const message = commandState?.message ?? ''
+  
+  // Handle double click for HTTP request commands
+  const handleDoubleClick = () => {
+    if (command === 'httpRequest') {
+      setHttpDialogOpen(true)
+    }
+  }
+  
+  // Handle saving HTTP request configuration
+  const handleSaveHttpConfig = (config: any) => {
+    try {
+      updateStep(activeTest, id, {
+        target: JSON.stringify(config)
+      })
+    } catch (error) {
+      console.error('Error saving HTTP request config:', error)
+    }
+    setHttpDialogOpen(false)
+  }
+  
   return (
     <ReorderableListItem
       className={mainClass}
@@ -130,6 +152,7 @@ const CommandRow: React.FC<CommandRowProps> = ({
         const clearSelection = !e.altKey && !e.shiftKey && !e.ctrlKey
         await updateStepSelection(index, selectBatch, addEntry, clearSelection)
       }}
+      onDoubleClick={handleDoubleClick}
       disablePadding
       reorder={(_, newIndex) => reorderPreview({ newIndex })}
       reorderConfirm={(_, newIndex) =>
@@ -228,6 +251,23 @@ const CommandRow: React.FC<CommandRowProps> = ({
       )}
       <CommandOverlay state={state} />
       <Box />
+      
+      {/* HTTP Request Dialog */}
+      {command === 'httpRequest' && (
+        <HttpRequestDialog
+          open={httpDialogOpen}
+          onClose={() => setHttpDialogOpen(false)}
+          onSave={handleSaveHttpConfig}
+          initialConfig={(() => {
+            try {
+              return target ? JSON.parse(target as string) : {}
+            } catch (error) {
+              console.error('Error parsing HTTP request config in command row:', error)
+              return {}
+            }
+          })()}
+        />
+      )}
     </ReorderableListItem>
   )
 }

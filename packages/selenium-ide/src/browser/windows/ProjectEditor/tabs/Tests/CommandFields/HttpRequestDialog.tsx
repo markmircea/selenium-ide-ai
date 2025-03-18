@@ -40,15 +40,17 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   initialConfig,
 }) => {
   const intl = useIntl()
-  const [config, setConfig] = useState<HttpRequestConfig>({
-    ...initialConfig,
-    method: initialConfig.method || 'GET',
-    url: initialConfig.url || '',
-    headers: initialConfig.headers || {},
-    body: initialConfig.body || '',
-    contentType: initialConfig.contentType || 'application/json',
-    timeout: initialConfig.timeout || 30000,
-  })
+  // Create a safe initial config
+  const safeInitialConfig = {
+    method: initialConfig?.method || 'GET',
+    url: initialConfig?.url || '',
+    headers: initialConfig?.headers || {},
+    body: initialConfig?.body || '',
+    contentType: initialConfig?.contentType || 'application/json',
+    timeout: initialConfig?.timeout || 30000,
+  }
+  
+  const [config, setConfig] = useState<HttpRequestConfig>(safeInitialConfig)
   const [activeTab, setActiveTab] = useState(0)
   const [headerKey, setHeaderKey] = useState('')
   const [headerValue, setHeaderValue] = useState('')
@@ -56,15 +58,28 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   // Reset form when dialog opens with new initialConfig
   useEffect(() => {
     if (open) {
-      setConfig({
-        ...initialConfig,
-        method: initialConfig.method || 'GET',
-        url: initialConfig.url || '',
-        headers: initialConfig.headers || {},
-        body: initialConfig.body || '',
-        contentType: initialConfig.contentType || 'application/json',
-        timeout: initialConfig.timeout || 30000,
-      })
+      try {
+        // Create a safe default config
+        setConfig({
+          method: initialConfig?.method || 'GET',
+          url: initialConfig?.url || '',
+          headers: initialConfig?.headers || {},
+          body: initialConfig?.body || '',
+          contentType: initialConfig?.contentType || 'application/json',
+          timeout: initialConfig?.timeout || 30000,
+        })
+      } catch (error) {
+        console.error('Error initializing HTTP request dialog:', error)
+        // If there's an error, set default values
+        setConfig({
+          method: 'GET',
+          url: '',
+          headers: {},
+          body: '',
+          contentType: 'application/json',
+          timeout: 30000,
+        })
+      }
     }
   }, [open, initialConfig])
 
@@ -131,7 +146,12 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+    >
       <DialogTitle>{intl.formatMessage({ id: 'Configure HTTP Request' })}</DialogTitle>
       <DialogContent>
         <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>

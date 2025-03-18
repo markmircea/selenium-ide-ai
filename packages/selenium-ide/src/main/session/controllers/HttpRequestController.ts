@@ -34,105 +34,132 @@ export default class HttpRequestController extends BaseController {
   }
 
   async sendHttpRequest(config: HttpRequestConfig): Promise<HttpRequestResult> {
-    const { method, url: requestUrl, headers = {}, body, contentType, timeout = 30000 } = config;
-    
-    return new Promise((resolve) => {
-      try {
-        const parsedUrl = new URL(requestUrl);
-        
-        // Add content-type header if provided
-        const requestHeaders = { ...headers };
-        if (contentType && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-          requestHeaders['Content-Type'] = contentType;
-        }
-        
-        const options = {
-          hostname: parsedUrl.hostname,
-          port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
-          path: parsedUrl.pathname + parsedUrl.search,
-          method: method,
-          headers: requestHeaders,
-          timeout: timeout
-        };
+    try {
+      // Ensure config is properly parsed if it's a string
+      const parsedConfig = typeof config === 'string' ? JSON.parse(config) : config;
+      const { method, url: requestUrl, headers = {}, body, contentType, timeout = 30000 } = parsedConfig;
+      
+      return new Promise((resolve) => {
+        try {
+          const parsedUrl = new URL(requestUrl);
+          
+          // Add content-type header if provided
+          const requestHeaders = { ...headers };
+          if (contentType && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+            requestHeaders['Content-Type'] = contentType;
+          }
+          
+          const options = {
+            hostname: parsedUrl.hostname,
+            port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+            path: parsedUrl.pathname + parsedUrl.search,
+            method: method,
+            headers: requestHeaders,
+            timeout: timeout
+          };
 
-        const protocol = parsedUrl.protocol === 'https:' ? https : http;
-        
-        const req = protocol.request(options, (res) => {
-          let responseData = '';
+          const protocol = parsedUrl.protocol === 'https:' ? https : http;
           
-          res.on('data', (chunk) => {
-            responseData += chunk;
-          });
-          
-          res.on('end', () => {
-            let parsedBody;
+          const req = protocol.request(options, (res) => {
+            let responseData = '';
             
-            // Try to parse JSON response
-            try {
-              const contentType = res.headers['content-type'];
-              if (contentType && contentType.includes('application/json')) {
-                parsedBody = JSON.parse(responseData);
-              } else {
+            res.on('data', (chunk) => {
+              responseData += chunk;
+            });
+            
+            res.on('end', () => {
+              let parsedBody;
+              
+              // Try to parse JSON response
+              try {
+                const contentType = res.headers['content-type'];
+                if (contentType && contentType.includes('application/json')) {
+                  parsedBody = JSON.parse(responseData);
+                } else {
+                  parsedBody = responseData;
+                }
+              } catch (e) {
                 parsedBody = responseData;
               }
-            } catch (e) {
-              parsedBody = responseData;
-            }
-            
-            // Convert headers to a simple object
-            const responseHeaders: Record<string, string> = {};
-            Object.keys(res.headers).forEach(key => {
-              const value = res.headers[key];
-              if (value !== undefined) {
-                responseHeaders[key] = Array.isArray(value) ? value.join(', ') : value;
-              }
-            });
-            
-            resolve({
-              status: res.statusCode || 0,
-              statusText: res.statusMessage || '',
-              headers: responseHeaders,
-              body: parsedBody
+              
+              // Convert headers to a simple object
+              const responseHeaders: Record<string, string> = {};
+              Object.keys(res.headers).forEach(key => {
+                const value = res.headers[key];
+                if (value !== undefined) {
+                  responseHeaders[key] = Array.isArray(value) ? value.join(', ') : value;
+                }
+              });
+              
+              resolve({
+                status: res.statusCode || 0,
+                statusText: res.statusMessage || '',
+                headers: responseHeaders,
+                body: parsedBody
+              });
             });
           });
-        });
-        
-        req.on('error', (error) => {
+          
+          req.on('error', (error) => {
+            resolve({
+              status: 0,
+              statusText: 'Error',
+              headers: {},
+              body: null,
+              error: error.message
+            });
+          });
+          
+          req.on('timeout', () => {
+            req.destroy();
+            resolve({
+              status: 0,
+              statusText: 'Timeout',
+              headers: {},
+              body: null,
+              error: 'Request timed out'
+            });
+          });
+          
+        // Send request body if applicable
+        if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+          // If the body is a JSON string with formatting (newlines, etc.), parse it and stringify it again
+          // to remove formatting characters while preserving the JSON structure
+          if (contentType && contentType.includes('application/json')) {
+            try {
+              // Try to parse the body as JSON to remove formatting
+              const parsedBody = JSON.parse(body);
+              // Stringify it again without pretty-printing
+              req.write(JSON.stringify(parsedBody));
+            } catch (e) {
+              // If parsing fails, send the original body
+              req.write(body);
+            }
+          } else {
+            // For non-JSON content types, send the body as is
+            req.write(body);
+          }
+        }
+          
+          req.end();
+        } catch (error) {
           resolve({
             status: 0,
             statusText: 'Error',
             headers: {},
             body: null,
-            error: error.message
+            error: error instanceof Error ? error.message : String(error)
           });
-        });
-        
-        req.on('timeout', () => {
-          req.destroy();
-          resolve({
-            status: 0,
-            statusText: 'Timeout',
-            headers: {},
-            body: null,
-            error: 'Request timed out'
-          });
-        });
-        
-        // Send request body if applicable
-        if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-          req.write(body);
         }
-        
-        req.end();
-      } catch (error) {
-        resolve({
-          status: 0,
-          statusText: 'Error',
-          headers: {},
-          body: null,
-          error: error instanceof Error ? error.message : String(error)
-        });
-      }
-    });
+      });
+    } catch (error) {
+      return {
+        status: 0,
+        statusText: 'Error',
+        headers: {},
+        body: null,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
   }
 }
