@@ -129,6 +129,7 @@ export default class WebDriverExecutor {
   doExportToCSV!: (variableName: string, filePath: string) => Promise<void>;
   doImportFromJSON!: (filePath: string, variableName: string) => Promise<void>;
   doImportFromCSV!: (filePath: string, variableName: string) => Promise<void>;
+  doHttpRequest!: (configJson: string, variableName: string) => Promise<void>;
 
   constructor({
     customCommands = {},
@@ -2024,7 +2025,6 @@ function createVerifyCommands(Executor: WebDriverExecutor) {
     })
 }
 
-// Scraping and saving commands
 
 WebDriverExecutor.prototype.doScrapeCollection = async function(
   this: WebDriverExecutor,
@@ -2032,17 +2032,14 @@ WebDriverExecutor.prototype.doScrapeCollection = async function(
   variableName: string
 ) {
   try {
-    // Find all elements matching the selector
     const elements = await this.driver.findElements(parseLocator(selector));
     
-    // Extract text from each element
     const extractedData = await Promise.all(
       elements.map(async (element: WebElementShape) => {
         return await element.getText();
       })
     );
     
-    // Store the extracted data in the specified variable
     this.variables.set(variableName, extractedData);
     
     if (this.logger) {
@@ -2062,7 +2059,6 @@ WebDriverExecutor.prototype.doScrapeStructured = async function(
   variableName: string
 ) {
   try {
-    // Parse the JSON mapping
     const mapping = JSON.parse(mappingJson);
     
     // Get the root selector if provided, otherwise use body
@@ -2579,6 +2575,68 @@ WebDriverExecutor.prototype.doImportFromCSV = composePreprocessors(
   interpolateString,
   interpolateString,
   WebDriverExecutor.prototype.doImportFromCSV
+)
+
+// HTTP Request command implementation
+WebDriverExecutor.prototype.doHttpRequest = async function(
+  this: WebDriverExecutor,
+  configJson: string,
+  variableName: string
+) {
+  try {
+    // Parse the configuration
+    const config = JSON.parse(configJson);
+    
+    // Use Electron IPC to send the request through the main process
+    const response = await this.driver.executeScript<any>(`
+      return new Promise((resolve) => {
+        if (window.electron && window.electron.ipcRenderer) {
+          window.electron.ipcRenderer.invoke('send-http-request', arguments[0])
+            .then(resolve)
+            .catch(error => {
+              resolve({
+                status: 0,
+                statusText: 'Error',
+                headers: {},
+                body: null,
+                error: error.message || 'Unknown error'
+              });
+            });
+        } else {
+          resolve({
+            status: 0,
+            statusText: 'Error',
+            headers: {},
+            body: null,
+            error: 'Electron IPC not available'
+          });
+        }
+      });
+    `, config);
+    
+    // Store the response in the variable
+    this.variables.set(variableName, response);
+    
+    if (this.logger) {
+      if (response.error) {
+        this.logger.error(`HTTP request failed: ${response.error}`);
+      } else {
+        this.logger.info(`HTTP request completed with status: ${response.status} ${response.statusText}`);
+      }
+    }
+  } catch (error) {
+    if (this.logger) {
+      this.logger.error(`HTTP request error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    throw new Error(`HTTP request failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// Add preprocessor
+WebDriverExecutor.prototype.doHttpRequest = composePreprocessors(
+  interpolateString,
+  null,
+  WebDriverExecutor.prototype.doHttpRequest
 )
 
 // @ts-expect-error

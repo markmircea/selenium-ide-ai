@@ -9,8 +9,8 @@ import CommandsController from './session/controllers/Commands'
 import DialogsController from './session/controllers/Dialogs'
 import DriverController from './session/controllers/Driver'
 import FileDownloaderController from './session/controllers/FileDownloader'
+import HttpRequestController from './session/controllers/HttpRequestController'
 import MenuController from './session/controllers/Menu'
-import OutputFormatsController from './session/controllers/OutputFormats'
 import PlaybackController from './session/controllers/Playback'
 import PluginsController from './session/controllers/Plugins'
 import PolyfillController from './session/controllers/Polyfill'
@@ -22,6 +22,7 @@ import SuitesController from './session/controllers/Suites'
 import SystemController from './session/controllers/System'
 import TestsController from './session/controllers/Tests'
 import WindowsController from './session/controllers/Windows'
+import OutputFormatsController from './session/controllers/OutputFormats'
 import { MainApi } from './api'
 import { StorageSchema } from './store'
 
@@ -49,6 +50,7 @@ export interface Session {
   dialogs: DialogsController
   driver: DriverController
   fileDownloader: FileDownloaderController
+  httpRequest: HttpRequestController
   menus: MenuController
   outputFormats: OutputFormatsController
   playback: PlaybackController

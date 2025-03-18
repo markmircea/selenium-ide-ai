@@ -38,7 +38,7 @@ const polyfill = () => {
     ipcRenderer: {
       invoke: (channel: string, data: any) => {
         // Whitelist channels that can be used
-        const validChannels = ['download-files', 'save-file', 'read-file'];
+        const validChannels = ['download-files', 'save-file', 'read-file', 'send-http-request'];
         if (validChannels.includes(channel)) {
           return ipcRenderer.invoke(channel, data);
         }

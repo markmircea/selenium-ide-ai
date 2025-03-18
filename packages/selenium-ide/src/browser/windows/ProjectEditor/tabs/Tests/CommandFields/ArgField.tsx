@@ -2,6 +2,7 @@ import { ArgNames } from '@seleniumhq/side-model/dist/ArgTypes'
 import React, { FC } from 'react'
 import CommandLocatorField from './LocatorField'
 import CommandTextField from './TextField'
+import HttpRequestField from './HttpRequestField'
 import { CommandArgFieldProps } from '../types'
 
 const ArgField: FC<CommandArgFieldProps> = (props) => {
@@ -10,6 +11,12 @@ const ArgField: FC<CommandArgFieldProps> = (props) => {
     command: { command },
     fieldName,
   } = props
+  
+  // Special case for HTTP request command
+  if (command === 'httpRequest' && fieldName === 'target') {
+    return <HttpRequestField {...props} />
+  }
+  
   // @ts-expect-error our shape traversal kinda sucks :(
   const arg = commands[command][fieldName]?.name as ArgNames
   switch (arg) {

@@ -480,6 +480,18 @@ const commands: typeof Commands = {
         '在循环控制流命令中迭代集合时使用的变量的名称（例如:for each）',
     },
   },
+  httpRequest: {
+    name: 'HTTP请求',
+    description: '发送HTTP请求并将响应存储在变量中',
+    target: {
+      name: '请求配置',
+      description: 'HTTP请求的JSON配置（URL、方法、标头、正文等）'
+    },
+    value: {
+      name: '变量名',
+      description: '存储HTTP响应的变量'
+    }
+  },
   if: {
     name: 'if',
     description: '在测试中创建一个条件分支。使用end命令终止分支。',

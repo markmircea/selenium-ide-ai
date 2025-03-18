@@ -729,6 +729,15 @@ const commands = {
     },
     value: ArgTypes.variableName,
   },
+  httpRequest: {
+    name: 'http request',
+    description: 'Sends an HTTP request and stores the response in a variable',
+    target: {
+      name: 'request config',
+      description: 'JSON configuration for the HTTP request (URL, method, headers, body, etc.)'
+    },
+    value: ArgTypes.variableName,
+  },
 }
 
 export default commands
