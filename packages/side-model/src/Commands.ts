@@ -711,6 +711,24 @@ const commands = {
       description: 'Absolute or relative path where the file will be saved (e.g., C:/Users/username/Downloads/data.csv or ./exports/data.csv)'
     },
   },
+  importFromJSON: {
+    name: 'import from json',
+    description: 'Imports data from a JSON file and stores it in a variable',
+    target: {
+      name: 'file path',
+      description: 'Absolute or relative path to the JSON file to import (e.g., C:/Users/username/Downloads/data.json or ./exports/data.json)'
+    },
+    value: ArgTypes.variableName,
+  },
+  importFromCSV: {
+    name: 'import from csv',
+    description: 'Imports data from a CSV file and stores it in a variable as an array of objects',
+    target: {
+      name: 'file path',
+      description: 'Absolute or relative path to the CSV file to import (e.g., C:/Users/username/Downloads/data.csv or ./exports/data.csv)'
+    },
+    value: ArgTypes.variableName,
+  },
 }
 
 export default commands

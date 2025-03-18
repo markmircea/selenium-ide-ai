@@ -127,6 +127,8 @@ export default class WebDriverExecutor {
   doDownloadFiles!: (variableName: string, filePath: string) => Promise<void>;
   doExportToJSON!: (variableName: string, filePath: string) => Promise<void>;
   doExportToCSV!: (variableName: string, filePath: string) => Promise<void>;
+  doImportFromJSON!: (filePath: string, variableName: string) => Promise<void>;
+  doImportFromCSV!: (filePath: string, variableName: string) => Promise<void>;
 
   constructor({
     customCommands = {},
@@ -1420,7 +1422,20 @@ export default class WebDriverExecutor {
 
   async doEcho(string: string) {
     if (this.logger) {
-      this.logger.info(`echo: ${string}`)
+      // Check if the string is a variable reference
+      if (string.startsWith('${') && string.endsWith('}')) {
+        const variableName = string.substring(2, string.length - 1);
+        const value = this.variables.get(variableName);
+        
+        // If it's an object or array, stringify it for better display
+        if (value !== null && typeof value === 'object') {
+          this.logger.info(`echo: ${JSON.stringify(value, null, 2)}`);
+        } else {
+          this.logger.info(`echo: ${value}`);
+        }
+      } else {
+        this.logger.info(`echo: ${string}`);
+      }
     }
   }
 
@@ -1943,6 +1958,25 @@ WebDriverExecutor.prototype.doEcho = composePreprocessors(
   WebDriverExecutor.prototype.doEcho
 )
 
+const originalDoEcho = WebDriverExecutor.prototype.doEcho;
+
+WebDriverExecutor.prototype.doEcho = function(string: string): Promise<void> {
+  // If it's a variable reference
+  if (string.startsWith('${') && string.endsWith('}')) {
+    const variableName = string.substring(2, string.length - 1);
+    const value = this.variables.get(variableName);
+    
+    if (value !== null && typeof value === 'object') {
+      if (this.logger) {
+        this.logger.info(`echo: ${JSON.stringify(value, null, 2)}`);
+      }
+      return Promise.resolve(); 
+    }
+  }
+  
+  return originalDoEcho.call(this, string);
+};
+
 const waitCommands: (keyof WebDriverExecutor)[] = [
   'doWaitForElementEditable',
   'doWaitForElementNotEditable',
@@ -2381,6 +2415,170 @@ WebDriverExecutor.prototype.doExportToCSV = composePreprocessors(
   interpolateString,
   interpolateString,
   WebDriverExecutor.prototype.doExportToCSV
+)
+
+WebDriverExecutor.prototype.doImportFromJSON = async function(
+  this: WebDriverExecutor,
+  filePath: string,
+  variableName: string
+) {
+  try {
+    if (this.logger) {
+      this.logger.info(`Importing JSON data from file: ${filePath}`);
+    }
+    
+    // Use Electron IPC to read the file
+    const result = await this.driver.executeScript<{status: string; content?: string; error?: string}>(`
+      return new Promise((resolve) => {
+        if (window.electron && window.electron.ipcRenderer) {
+          window.electron.ipcRenderer.invoke('read-file', {
+            filePath: arguments[0],
+            encoding: 'utf8'
+          }).then(resolve);
+        } else {
+          resolve({ status: 'error', error: 'Electron IPC not available' });
+        }
+      });
+    `, filePath);
+    
+    if (result.status === 'error' || !result.content) {
+      throw new Error(result.error || 'Failed to read file');
+    }
+    
+    // Parse the JSON content
+    const data = JSON.parse(result.content);
+    
+    // Store the data in the specified variable
+    this.variables.set(variableName, data);
+    
+    if (this.logger) {
+      this.logger.info(`Successfully imported JSON data from ${filePath} into variable ${variableName}`);
+    }
+  } catch (error: any) {
+    if (this.logger) {
+      this.logger.error(`Failed to import JSON: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+WebDriverExecutor.prototype.doImportFromCSV = async function(
+  this: WebDriverExecutor,
+  filePath: string,
+  variableName: string
+) {
+  try {
+    if (this.logger) {
+      this.logger.info(`Importing CSV data from file: ${filePath}`);
+    }
+    
+    // Use Electron IPC to read the file
+    const result = await this.driver.executeScript<{status: string; content?: string; error?: string}>(`
+      return new Promise((resolve) => {
+        if (window.electron && window.electron.ipcRenderer) {
+          window.electron.ipcRenderer.invoke('read-file', {
+            filePath: arguments[0],
+            encoding: 'utf8'
+          }).then(resolve);
+        } else {
+          resolve({ status: 'error', error: 'Electron IPC not available' });
+        }
+      });
+    `, filePath);
+    
+    if (result.status === 'error' || !result.content) {
+      throw new Error(result.error || 'Failed to read file');
+    }
+    
+    // Parse the CSV content
+    const csvContent = result.content;
+    // Split by newline, handling both \n and \r\n
+    const lines = csvContent.split(/\r?\n/);
+    
+    // Filter out empty lines
+    const nonEmptyLines = lines.filter(line => line.trim().length > 0);
+    
+    if (nonEmptyLines.length < 1) {
+      throw new Error('CSV file is empty');
+    }
+    
+    // Parse the header row
+    const headers = parseCSVLine(nonEmptyLines[0]);
+    
+    // Parse the data rows
+    const data = [];
+    for (let i = 1; i < nonEmptyLines.length; i++) {
+      const line = nonEmptyLines[i].trim();
+      if (line) {
+        const values = parseCSVLine(line);
+        const row: Record<string, string> = {};
+        
+        // Map values to headers
+        headers.forEach((header, index) => {
+          row[header] = index < values.length ? values[index] : '';
+        });
+        
+        data.push(row);
+      }
+    }
+    
+    // Store the data in the specified variable
+    this.variables.set(variableName, data.length > 0 ? data : []);
+    
+    if (this.logger) {
+      this.logger.info(`Successfully imported CSV data from ${filePath} into variable ${variableName} (${data.length} rows)`);
+    }
+  } catch (error: any) {
+    if (this.logger) {
+      this.logger.error(`Failed to import CSV: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+// Helper function to parse a CSV line, handling quoted values with commas
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+        // Handle escaped quotes (two double quotes in a row)
+        current += '"';
+        i++; // Skip the next quote
+      } else {
+        // Toggle quote state
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // End of field
+      result.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add the last field
+  result.push(current);
+  
+  return result;
+}
+
+WebDriverExecutor.prototype.doImportFromJSON = composePreprocessors(
+  interpolateString,
+  interpolateString,
+  WebDriverExecutor.prototype.doImportFromJSON
+)
+
+WebDriverExecutor.prototype.doImportFromCSV = composePreprocessors(
+  interpolateString,
+  interpolateString,
+  WebDriverExecutor.prototype.doImportFromCSV
 )
 
 // @ts-expect-error

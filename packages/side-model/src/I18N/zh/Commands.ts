@@ -85,6 +85,30 @@ const commands: typeof Commands = {
       description: '保存文件的路径'
     }
   },
+  importFromJSON: {
+    name: '从JSON导入',
+    description: '从JSON文件导入数据并存储在变量中',
+    target: {
+      name: '文件路径',
+      description: '要导入的JSON文件的绝对或相对路径'
+    },
+    value: {
+      name: '变量名',
+      description: '存储导入数据的变量'
+    }
+  },
+  importFromCSV: {
+    name: '从CSV导入',
+    description: '从CSV文件导入数据并将其作为对象数组存储在变量中',
+    target: {
+      name: '文件路径',
+      description: '要导入的CSV文件的绝对或相对路径'
+    },
+    value: {
+      name: '变量名',
+      description: '存储导入数据的变量'
+    }
+  },
   acceptAlert: {
     name: 'accept alert',
     description: '影响当前显示的Alert。此命令指示Selenium接受它。',

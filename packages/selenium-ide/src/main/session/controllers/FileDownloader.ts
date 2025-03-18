@@ -28,6 +28,54 @@ export default class FileDownloaderController extends BaseController {
     ipcMain.handle('save-file', async (_event, { content, filePath, mimeType }: { content: string, filePath: string, mimeType: string }) => {
       return await this.saveFile(content, filePath, mimeType);
     });
+    
+    ipcMain.handle('read-file', async (_event, { filePath, encoding }: { filePath: string, encoding: string }) => {
+      return await this.readFile(filePath, encoding);
+    });
+  }
+  
+  async readFile(filePath: string, encoding: string = 'utf8'): Promise<{ status: string; content?: string; error?: string }> {
+    console.log(`Reading file from path: ${filePath}`);
+    
+    try {
+      // Handle special characters and normalize the path
+      let targetPath = filePath.trim();
+      
+      // Normalize path separators (handle both / and \)
+      targetPath = path.normalize(targetPath);
+      
+      // If the path is relative, make it absolute
+      if (!path.isAbsolute(targetPath)) {
+        targetPath = path.resolve(process.cwd(), targetPath);
+      }
+      
+      console.log(`Resolved file path: ${targetPath}`);
+      
+      // Check if file exists
+      if (!fs.existsSync(targetPath)) {
+        return {
+          status: 'error',
+          error: `File not found: ${targetPath}`
+        };
+      }
+      
+      // Read the file
+      const content = fs.readFileSync(targetPath, { encoding: encoding as BufferEncoding });
+      
+      console.log(`Successfully read file from: ${targetPath}`);
+      
+      return {
+        status: 'success',
+        content
+      };
+    } catch (error) {
+      console.error(`Error reading file: ${error instanceof Error ? error.message : String(error)}`);
+      
+      return {
+        status: 'error',
+        error: `Failed to read file: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
   }
   
   async saveFile(content: string, filePath: string, _mimeType: string): Promise<{ status: string; path?: string; error?: string }> {
