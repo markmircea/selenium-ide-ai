@@ -248,7 +248,7 @@ const commands = {
   },
   end: {
     name: 'end',
-    description: `Terminates a control flow block for if, while, and times.`,
+    description: `Terminates a control flow block for if, while, and times`,
   },
   executeScript: {
     name: 'execute script',
@@ -459,14 +459,14 @@ const commands = {
   },
   storeJson: {
     name: 'store json',
-    description: `Ssave JSON as an object on a variable`,
+    description: `Save JSON as an object on a variable`,
     target: ArgTypes.json,
     value: ArgTypes.variableName,
   },
   storeText: {
     name: 'store text',
     description: `Gets the text of an element and stores it for later use. 
-        This works for any element that contains text.`,
+        This works for any element that contains text. Single element only use scrape collection to store text from all similar elements, or scrape structured so store multiple elements in 1 variable.`,
     target: ArgTypes.locator,
     value: ArgTypes.variableName,
   },
@@ -489,7 +489,7 @@ const commands = {
   },
   times: {
     name: 'times',
-    description: `Create a loop that executes the proceeding commands n number of times.`,
+    description: `Create a loop that executes the proceeding commands n number of times, can end with END.`,
     target: ArgTypes.times,
     value: ArgTypes.loopLimit,
   },
@@ -652,22 +652,22 @@ const commands = {
   while: {
     name: 'while',
     description: `Create a loop that executes the proceeding commands 
-        repeatedly for as long as the provided conditional expression is true.`,
+        repeatedly for as long as the provided conditional expression is true. End with END`,
     target: ArgTypes.conditionalExpression,
     value: ArgTypes.loopLimit,
   },
   scrapeCollection: {
     name: 'scrape collection',
-    description: 'Extracts data from all elements matching a selector and stores as an array',
+    description: 'Extracts data from all elements matching a single selector and stores as an array',
     target: ArgTypes.locator,
     value: ArgTypes.variableName,
   },
   scrapeStructured: {
     name: 'scrape structured',
-    description: 'Extracts structured data from elements using a mapping of fields to selectors',
+    description: 'Extracts structured data from multiple elements using a mapping of fields to selectors',
     target: {
       name: 'json',
-      description: 'JSON format for matching fields to selectors: (e.g., {"_root": "css=article", "title": "css=a[slot=`title`]", "author": "css=a[href^=`/user/`]", "img": "css=img.i18n-post-media-img@src", "videoURL": "css=shreddit-player-2@src"}'
+      description: 'JSON format for matching fields to selectors: (e.g., {"_root": "css=article", "title": "css=a[slot=`title`]", "author": "css=a[href^=`/user/`]", "img": "css=img.i18n-post-media-img@src", "videoURL": "css=shreddit-player-2@src"} @ used for attribute selector'
     },
     
     value: ArgTypes.variableName,
@@ -699,7 +699,7 @@ const commands = {
     target: ArgTypes.variableName,
     value: {
       name: 'file path',
-      description: 'Absolute or relative path where the file will be saved (e.g., C:/Users/username/Downloads/data.json or ./exports/data.json)'
+      description: 'Absolute or relative path where the file will be saved, include filename (e.g., C:/Users/username/Downloads/data.json or ./exports/data.json)'
     },
   },
   exportToCSV: {
@@ -708,7 +708,7 @@ const commands = {
     target: ArgTypes.variableName,
     value: {
       name: 'file path',
-      description: 'Absolute or relative path where the file will be saved (e.g., C:/Users/username/Downloads/data.csv or ./exports/data.csv)'
+      description: 'Absolute or relative path where the file will be saved, include filename (e.g., C:/Users/username/Downloads/data.csv or ./exports/data.csv)'
     },
   },
   importFromJSON: {
