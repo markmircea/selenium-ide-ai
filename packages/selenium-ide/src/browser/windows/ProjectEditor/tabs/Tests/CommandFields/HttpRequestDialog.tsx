@@ -26,6 +26,7 @@ import { useIntl } from 'react-intl'
 export interface HttpRequestConfig {
   method: string;
   url: string;
+  queryParams?: Record<string, string>;
   headers: Record<string, string>;
   body: string;
   contentType: string;
@@ -53,6 +54,18 @@ const isValidJSON = (jsonString: string): boolean => {
   }
 };
 
+// Helper function to build URL with query parameters
+const buildUrlWithParams = (baseUrl: string, params: Record<string, string> = {}): string => {
+  if (!Object.keys(params).length) return baseUrl;
+  
+  const url = new URL(baseUrl.startsWith('http') ? baseUrl : `http://AIBrainL.ink/${baseUrl}`);
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.append(key, value);
+  });
+  
+  return baseUrl.startsWith('http') ? url.toString() : url.pathname + url.search;
+};
+
 interface HttpRequestDialogProps {
   open: boolean;
   onClose: () => void;
@@ -71,6 +84,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   const safeInitialConfig = {
     method: initialConfig?.method || 'GET',
     url: initialConfig?.url || '',
+    queryParams: initialConfig?.queryParams || {},
     headers: initialConfig?.headers || {},
     body: initialConfig?.body || '',
     contentType: initialConfig?.contentType || 'application/json',
@@ -81,6 +95,8 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   const [activeTab, setActiveTab] = useState(0)
   const [headerKey, setHeaderKey] = useState('')
   const [headerValue, setHeaderValue] = useState('')
+  const [paramKey, setParamKey] = useState('')
+  const [paramValue, setParamValue] = useState('')
   const [jsonError, setJsonError] = useState<string | null>(null)
 
   // Reset form when dialog opens with new initialConfig
@@ -91,6 +107,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
         setConfig({
           method: initialConfig?.method || 'GET',
           url: initialConfig?.url || '',
+          queryParams: initialConfig?.queryParams || {},
           headers: initialConfig?.headers || {},
           body: initialConfig?.body || '',
           contentType: initialConfig?.contentType || 'application/json',
@@ -102,6 +119,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
         setConfig({
           method: 'GET',
           url: '',
+          queryParams: {},
           headers: {},
           body: '',
           contentType: 'application/json',
@@ -198,6 +216,29 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
       headers: newHeaders,
     })
   }
+  
+  const handleAddQueryParam = () => {
+    if (paramKey.trim()) {
+      setConfig({
+        ...config,
+        queryParams: {
+          ...config.queryParams,
+          [paramKey]: paramValue,
+        },
+      })
+      setParamKey('')
+      setParamValue('')
+    }
+  }
+
+  const handleRemoveQueryParam = (key: string) => {
+    const newParams = { ...config.queryParams }
+    delete newParams[key]
+    setConfig({
+      ...config,
+      queryParams: newParams,
+    })
+  }
 
   const handleTimeoutChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const timeout = parseInt(event.target.value)
@@ -212,6 +253,15 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   const handleSave = () => {
     onSave(config)
   }
+
+  // Generate a preview URL with query parameters
+  const previewUrl = React.useMemo(() => {
+    try {
+      return buildUrlWithParams(config.url, config.queryParams);
+    } catch (e) {
+      return config.url;
+    }
+  }, [config.url, config.queryParams]);
 
   return (
     <Dialog 
@@ -244,16 +294,56 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
             value={config.url}
             onChange={handleChange('url')}
             fullWidth
+            helperText={intl.formatMessage({ id: 'You can use ${variable} syntax' })}
           />
         </Box>
 
         <Tabs value={activeTab} onChange={handleTabChange}>
+          <Tab label={intl.formatMessage({ id: 'Query Params' })} />
           <Tab label={intl.formatMessage({ id: 'Headers' })} />
           <Tab label={intl.formatMessage({ id: 'Body' })} />
           <Tab label={intl.formatMessage({ id: 'Advanced' })} />
         </Tabs>
 
         {activeTab === 0 && (
+          <Box sx={{ mt: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <TextField
+                label={intl.formatMessage({ id: 'Parameter Name' })}
+                value={paramKey}
+                onChange={(e) => setParamKey(e.target.value)}
+              />
+              <TextField
+                label={intl.formatMessage({ id: 'Parameter Value' })}
+                value={paramValue}
+                onChange={(e) => setParamValue(e.target.value)}
+                helperText={intl.formatMessage({ id: 'You can use ${variable} syntax' })}
+              />
+              <IconButton onClick={handleAddQueryParam}>
+                <AddIcon />
+              </IconButton>
+            </Box>
+            {Object.entries(config.queryParams || {}).map(([key, value]) => (
+              <Box key={key} sx={{ display: 'flex', gap: 2, mb: 1 }}>
+                <TextField
+                  disabled
+                  value={key}
+                  sx={{ flex: 1 }}
+                />
+                <TextField
+                  disabled
+                  value={value}
+                  sx={{ flex: 1 }}
+                />
+                <IconButton onClick={() => handleRemoveQueryParam(key)}>
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            ))}
+          </Box>
+        )}
+
+        {activeTab === 1 && (
           <Box sx={{ mt: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <TextField
@@ -265,6 +355,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
                 label={intl.formatMessage({ id: 'Header Value' })}
                 value={headerValue}
                 onChange={(e) => setHeaderValue(e.target.value)}
+                helperText={intl.formatMessage({ id: 'You can use ${variable} syntax' })}
               />
               <IconButton onClick={handleAddHeader}>
                 <AddIcon />
@@ -290,7 +381,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
           </Box>
         )}
 
-        {activeTab === 1 && (
+        {activeTab === 2 && (
           <Box sx={{ mt: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'flex-start' }}>
               <FormControl sx={{ minWidth: 200 }}>
@@ -335,6 +426,13 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
               rows={8}
               fullWidth
               error={Boolean(jsonError)}
+              helperText={intl.formatMessage({ id: 'You can use ${variable} syntax' })}
+              onKeyDown={(e) => {
+                // Stop propagation of arrow keys to prevent changing steps in the list
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                  e.stopPropagation();
+                }
+              }}
               sx={{
                 fontFamily: config.contentType === 'application/json' ? 'monospace' : 'inherit',
                 '& .MuiInputBase-input': {
@@ -345,7 +443,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
           </Box>
         )}
 
-        {activeTab === 2 && (
+        {activeTab === 3 && (
           <Box sx={{ mt: 2 }}>
             <TextField
               label={intl.formatMessage({ id: 'Timeout (ms)' })}
@@ -360,7 +458,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
             </Typography>
             <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
               <Typography variant="subtitle2" color="primary">
-                {config.method} {config.url}
+                {config.method} {previewUrl}
               </Typography>
               
               <Divider sx={{ my: 1 }} />
@@ -406,6 +504,10 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
                 </>
               )}
             </Paper>
+            
+            <Typography variant="body2" sx={{ mt: 2, fontStyle: 'italic' }}>
+              {intl.formatMessage({ id: 'Note: Variables like ${variable} will be replaced with actual values during execution' })}
+            </Typography>
           </Box>
         )}
       </DialogContent>

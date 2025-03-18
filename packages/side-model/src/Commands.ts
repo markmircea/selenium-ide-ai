@@ -667,7 +667,7 @@ const commands = {
     description: 'Extracts structured data from multiple elements using a mapping of fields to selectors',
     target: {
       name: 'json',
-      description: 'JSON format for matching fields to selectors: (e.g., {"_root": "css=article", "title": "css=a[slot=`title`]", "author": "css=a[href^=`/user/`]", "img": "css=img.i18n-post-media-img@src", "videoURL": "css=shreddit-player-2@src"} @ used for attribute selector'
+      description: 'JSON format for matching fields to selectors: (e.g., {"_root": "css=article", "title": "css=a[slot=\'title\']", "author": "css=a[href^=\'/user/\']", "img": "css=img.i18n-post-media-img@src", "videoURL": "css=shreddit-player-2@src"} @ used for attribute selector'
     },
     
     value: ArgTypes.variableName,

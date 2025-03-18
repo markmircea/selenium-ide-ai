@@ -15,6 +15,7 @@ export interface HttpRequestResult {
 export interface HttpRequestConfig {
   method: string;
   url: string;
+  queryParams?: Record<string, string>;
   headers?: Record<string, string>;
   body?: string;
   contentType?: string;
@@ -37,7 +38,33 @@ export default class HttpRequestController extends BaseController {
     try {
       // Ensure config is properly parsed if it's a string
       const parsedConfig = typeof config === 'string' ? JSON.parse(config) : config;
-      const { method, url: requestUrl, headers = {}, body, contentType, timeout = 30000 } = parsedConfig;
+      const { 
+        method, 
+        url: rawUrl, 
+        queryParams = {}, 
+        headers = {}, 
+        body, 
+        contentType, 
+        timeout = 30000 
+      } = parsedConfig;
+      
+      // Variables will be interpolated in the runtime, not here
+      // We just need to pass the raw values to the runtime
+      
+      // Build the URL with query parameters
+      let requestUrl = rawUrl;
+      if (Object.keys(queryParams).length > 0) {
+        try {
+          const url = new URL(rawUrl.startsWith('http') ? rawUrl : `http://placeholder.com/${rawUrl}`);
+          Object.entries(queryParams).forEach(([key, value]) => {
+            url.searchParams.append(key, value as string);
+          });
+          requestUrl = rawUrl.startsWith('http') ? url.toString() : url.pathname + url.search;
+        } catch (error) {
+          // If URL parsing fails, just use the raw URL
+          console.error('Error building URL with query parameters:', error);
+        }
+      }
       
       return new Promise((resolve) => {
         try {
@@ -121,31 +148,49 @@ export default class HttpRequestController extends BaseController {
             });
           });
           
-        // Send request body if provided
-        if (body) {
-          // If the body is a JSON string with formatting (newlines, etc.), parse it and stringify it again
-          // to remove formatting characters while preserving the JSON structure
-          if (contentType && contentType.includes('application/json')) {
-            try {
-              // First, sanitize any control characters that might cause JSON parsing to fail
-              const sanitizedBody = body.replace(/[\u0000-\u001F\u007F-\u009F]/g, (char: string) => {
-                // Replace control characters with their escaped Unicode representation
-                return `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`;
-              });
-              
-              // Try to parse the body as JSON to remove formatting
-              const parsedBody = JSON.parse(sanitizedBody);
-              // Stringify it again without pretty-printing
-              req.write(JSON.stringify(parsedBody));
-            } catch (e) {
-              // If parsing fails, send the original body
+          // Send request body if provided
+          if (body) {
+            // Handle the body based on content type
+            if (contentType && contentType.includes('application/json')) {
+              try {
+                // Check if the body is a stringified representation of an object/array
+                // This happens when a variable containing an object is interpolated into the body
+                if (body.includes('[object Object]')) {
+                  console.warn('Detected [object Object] in body, this might be a variable interpolation issue');
+                  // This is a fallback, but the proper solution is to handle this in the runtime
+                  req.write(body);
+                } else {
+                  // For JSON content, we need to parse it and then stringify it properly
+                  // This ensures that escape characters and newlines are handled correctly
+                  
+                  // First attempt to parse the JSON directly
+                  let parsedBody;
+                  try {
+                    parsedBody = JSON.parse(body);
+                  } catch (parseError) {
+                    // If direct parsing fails, try sanitizing control characters first
+                    const sanitizedBody = body.replace(/[\u0000-\u001F\u007F-\u009F]/g, (char: string) => {
+                      return `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`;
+                    });
+                    
+                    // Try to parse the sanitized body
+                    parsedBody = JSON.parse(sanitizedBody);
+                  }
+                  
+                  // Now stringify the parsed body without pretty-printing
+                  // This ensures no literal newlines or unnecessary escape characters are included
+                  req.write(JSON.stringify(parsedBody));
+                }
+              } catch (e) {
+                console.error('Error processing JSON body:', e);
+                // If all parsing attempts fail, send the original body as a last resort
+                req.write(body);
+              }
+            } else {
+              // For non-JSON content types, send the body as is
               req.write(body);
             }
-          } else {
-            // For non-JSON content types, send the body as is
-            req.write(body);
           }
-        }
           
           req.end();
         } catch (error) {

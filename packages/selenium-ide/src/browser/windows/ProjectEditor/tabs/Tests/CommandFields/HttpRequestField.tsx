@@ -45,6 +45,9 @@ const HttpRequestField: FC<CommandFieldProps> = ({
   const label = fullNote ? 
     intl.formatMessage({ id: languageMap.testCore.target }) + ' - ' + fullNote : 
     intl.formatMessage({ id: languageMap.testCore.target })
+  
+  // Helper text to indicate variable support
+  const helperText = intl.formatMessage({ id: 'You can use ${variable} syntax' })
 
   const handleOpenDialog = () => {
     setDialogOpen(true)
@@ -84,6 +87,7 @@ const HttpRequestField: FC<CommandFieldProps> = ({
         size="small"
         margin="dense"
         value={displayValue}
+        helperText={helperText}
       />
       <Tooltip
         className="flex-initial ms-4 my-auto"
@@ -103,10 +107,15 @@ const HttpRequestField: FC<CommandFieldProps> = ({
         onSave={handleSaveConfig}
         initialConfig={(() => {
           try {
-            return command[fieldName] ? JSON.parse(command[fieldName] as string) : {}
+            const config = command[fieldName] ? JSON.parse(command[fieldName] as string) : {};
+            // Ensure queryParams exists
+            if (!config.queryParams) {
+              config.queryParams = {};
+            }
+            return config;
           } catch (error) {
             console.error('Error parsing HTTP request config:', error)
-            return {}
+            return { queryParams: {} }
           }
         })()}
       />
