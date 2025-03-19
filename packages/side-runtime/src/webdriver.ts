@@ -2704,7 +2704,7 @@ WebDriverExecutor.prototype.doHttpRequest = async function(
       
       // Handle individual file paths
       if (config.files.filePaths && Array.isArray(config.files.filePaths)) {
-        config.files.filePaths = config.files.filePaths.map(filePath => {
+        config.files.filePaths = config.files.filePaths.map((filePath: string) => {
           if (typeof filePath === 'string') {
             return interpolateString(filePath, this.variables);
           }

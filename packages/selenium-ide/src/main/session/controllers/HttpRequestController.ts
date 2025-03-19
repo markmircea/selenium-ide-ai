@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as glob from 'glob';
 import BaseController from './Base';
 import { Session } from '../../types';
+import { getMimeType } from '../../utils/mimeTypes';
 
 export interface HttpRequestResult {
   status: number;
@@ -291,22 +292,26 @@ export default class HttpRequestController extends BaseController {
           
           // Get all files in the folder
           const filesInFolder = glob.sync(path.join(folderPath, '*'));
+          console.log(`Found ${filesInFolder.length} files in folder ${folderPath}`);
           
           // Add each file to the multipart request
-          filesInFolder.forEach((filePath) => {
+          filesInFolder.forEach((filePath, index) => {
             if (fs.statSync(filePath).isFile()) {
               const fileName = path.basename(filePath);
               const fileContent = fs.readFileSync(filePath);
-              const mimeType = this.getMimeType(filePath);
+              const mimeType = getMimeType(filePath);
               
+              // Use a unique name parameter for each file to ensure they're all sent
               const filePart = 
                 `--${boundary}\r\n` +
-                `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+                `Content-Disposition: form-data; name="file_${index}"; filename="${fileName}"\r\n` +
                 `Content-Type: ${mimeType}\r\n\r\n`;
               
               req.write(filePart);
               req.write(fileContent);
               req.write('\r\n');
+              
+              console.log(`Added file from folder: ${fileName} (${mimeType})`);
             }
           });
         } catch (error) {
@@ -316,21 +321,26 @@ export default class HttpRequestController extends BaseController {
       
       // Process individual files
       if (files?.filePaths && files.filePaths.length > 0) {
-        files.filePaths.forEach((filePath) => {
+        files.filePaths.forEach((filePath, index) => {
           try {
             if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
               const fileName = path.basename(filePath);
               const fileContent = fs.readFileSync(filePath);
-              const mimeType = this.getMimeType(filePath);
+              const mimeType = getMimeType(filePath);
               
+              // Use a unique name parameter for each file to ensure they're all sent
               const filePart = 
                 `--${boundary}\r\n` +
-                `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+                `Content-Disposition: form-data; name="file_${index}"; filename="${fileName}"\r\n` +
                 `Content-Type: ${mimeType}\r\n\r\n`;
               
               req.write(filePart);
               req.write(fileContent);
               req.write('\r\n');
+              
+              console.log(`Added individual file: ${fileName} (${mimeType})`);
+            } else {
+              console.error(`File does not exist or is not a file: ${filePath}`);
             }
           } catch (error) {
             console.error(`Error processing file ${filePath}:`, error);
@@ -343,35 +353,5 @@ export default class HttpRequestController extends BaseController {
     } catch (error) {
       console.error('Error in handleMultipartFormData:', error);
     }
-  }
-  
-  /**
-   * Get MIME type based on file extension
-   */
-  private getMimeType(filePath: string): string {
-    const ext = path.extname(filePath).toLowerCase();
-    
-    const mimeTypes: Record<string, string> = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.pdf': 'application/pdf',
-      '.txt': 'text/plain',
-      '.html': 'text/html',
-      '.htm': 'text/html',
-      '.json': 'application/json',
-      '.xml': 'application/xml',
-      '.zip': 'application/zip',
-      '.doc': 'application/msword',
-      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      '.xls': 'application/vnd.ms-excel',
-      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      '.ppt': 'application/vnd.ms-powerpoint',
-      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      '.csv': 'text/csv',
-    };
-    
-    return mimeTypes[ext] || 'application/octet-stream';
   }
 }
