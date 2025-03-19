@@ -31,6 +31,10 @@ export interface HttpRequestConfig {
   body: string;
   contentType: string;
   timeout?: number;
+  files?: {
+    folderPath?: string;
+    filePaths?: string[];
+  };
 }
 
 // Helper function to format JSON with proper indentation, handling ${variable} syntax
@@ -123,6 +127,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   const [paramKey, setParamKey] = useState('')
   const [paramValue, setParamValue] = useState('')
   const [jsonError, setJsonError] = useState<string | null>(null)
+  const [filePath, setFilePath] = useState('')
 
   // Reset form when dialog opens with new initialConfig
   useEffect(() => {
@@ -137,6 +142,10 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
           body: initialConfig?.body || '',
           contentType: initialConfig?.contentType || 'application/json',
           timeout: initialConfig?.timeout || 30000,
+          files: initialConfig?.files || {
+            folderPath: '',
+            filePaths: [],
+          },
         })
       } catch (error) {
         console.error('Error initializing HTTP request dialog:', error)
@@ -149,6 +158,10 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
           body: '',
           contentType: 'application/json',
           timeout: 30000,
+          files: {
+            folderPath: '',
+            filePaths: [],
+          },
         })
       }
     }
@@ -348,6 +361,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
           <Tab label={intl.formatMessage({ id: 'Query Params' })} />
           <Tab label={intl.formatMessage({ id: 'Headers' })} />
           <Tab label={intl.formatMessage({ id: 'Body' })} />
+          <Tab label={intl.formatMessage({ id: 'Files' })} />
           <Tab label={intl.formatMessage({ id: 'Advanced' })} />
         </Tabs>
 
@@ -492,6 +506,97 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
 
         {activeTab === 3 && (
           <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2 }}>
+              {intl.formatMessage({ id: 'File Upload Settings' })}
+            </Typography>
+            
+            <Box sx={{ mb: 3 }}>
+              <TextField
+                label={intl.formatMessage({ id: 'Folder Path' })}
+                value={config.files?.folderPath || ''}
+                onChange={(e) => {
+                  const newConfig = {
+                    ...config,
+                    files: {
+                      ...config.files,
+                      folderPath: e.target.value,
+                    },
+                  };
+                  setConfig(newConfig);
+                }}
+                fullWidth
+                helperText={intl.formatMessage({ id: 'Path to folder containing files to upload. You can use ${variable} syntax' })}
+                sx={{ mb: 2 }}
+              />
+            </Box>
+            
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              {intl.formatMessage({ id: 'Individual Files' })}
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <TextField
+                label={intl.formatMessage({ id: 'File Path' })}
+                value={filePath}
+                onChange={(e) => setFilePath(e.target.value)}
+                fullWidth
+                helperText={intl.formatMessage({ id: 'You can use ${variable} syntax' })}
+              />
+              <IconButton 
+                onClick={() => {
+                  if (filePath.trim()) {
+                    const newFilePaths = [...(config.files?.filePaths || []), filePath];
+                    const newConfig = {
+                      ...config,
+                      files: {
+                        ...config.files,
+                        filePaths: newFilePaths,
+                      },
+                    };
+                    setConfig(newConfig);
+                    setFilePath('');
+                  }
+                }}
+                sx={{ mt: 1 }}
+              >
+                <AddIcon />
+              </IconButton>
+            </Box>
+            
+            {(config.files?.filePaths || []).map((path, index) => (
+              <Box key={`file-${index}`} sx={{ display: 'flex', gap: 2, mb: 1 }}>
+                <TextField
+                  disabled
+                  value={path}
+                  fullWidth
+                />
+                <IconButton 
+                  onClick={() => {
+                    const newFilePaths = [...(config.files?.filePaths || [])];
+                    newFilePaths.splice(index, 1);
+                    const newConfig = {
+                      ...config,
+                      files: {
+                        ...config.files,
+                        filePaths: newFilePaths,
+                      },
+                    };
+                    setConfig(newConfig);
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            ))}
+            
+            <Alert severity="info" sx={{ mt: 2 }}>
+              {intl.formatMessage({ id: 'Files can be uploaded with any content type header, but multipart/form-data is the standard format for file uploads' })}
+            </Alert>
+          </Box>
+        )}
+
+        {activeTab === 4 && (
+          <Box sx={{ mt: 2 }}>
             <TextField
               label={intl.formatMessage({ id: 'Timeout (ms)' })}
               type="number"
@@ -547,6 +652,37 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
                     {config.contentType === 'application/json' && isValidJSON(config.body) 
                       ? formatJSON(config.body)
                       : config.body}
+                  </Box>
+                </>
+              )}
+              
+              {config.contentType === 'multipart/form-data' && 
+               ((config.files?.folderPath && config.files.folderPath.trim() !== '') || 
+                (config.files?.filePaths && config.files.filePaths.length > 0)) && (
+                <>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="subtitle2">
+                    {intl.formatMessage({ id: 'Files' })}:
+                  </Typography>
+                  <Box 
+                    sx={{ 
+                      pl: 2, 
+                      fontFamily: 'monospace', 
+                      fontSize: '0.875rem',
+                      maxHeight: '150px',
+                      overflow: 'auto'
+                    }}
+                  >
+                    {config.files?.folderPath && (
+                      <Typography variant="body2">
+                        {intl.formatMessage({ id: 'Folder' })}: {config.files.folderPath}
+                      </Typography>
+                    )}
+                    {config.files?.filePaths && config.files.filePaths.map((path, index) => (
+                      <Typography key={`preview-file-${index}`} variant="body2">
+                        {intl.formatMessage({ id: 'File' })} {index + 1}: {path}
+                      </Typography>
+                    ))}
                   </Box>
                 </>
               )}

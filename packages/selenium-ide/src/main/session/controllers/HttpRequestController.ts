@@ -1,6 +1,9 @@
 import { ipcMain } from 'electron';
 import * as https from 'https';
 import * as http from 'http';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as glob from 'glob';
 import BaseController from './Base';
 import { Session } from '../../types';
 
@@ -21,6 +24,10 @@ export interface HttpRequestConfig {
   contentType?: string;
   timeout?: number;
   _bodyIsProcessedJson?: boolean;
+  files?: {
+    folderPath?: string;
+    filePaths?: string[];
+  };
 }
 
 export default class HttpRequestController extends BaseController {
@@ -71,10 +78,19 @@ export default class HttpRequestController extends BaseController {
         try {
           const parsedUrl = new URL(requestUrl);
           
+          // Generate a boundary for multipart/form-data
+          const boundary = contentType === 'multipart/form-data' 
+            ? `----WebKitFormBoundary${Math.random().toString(16).substr(2)}`
+            : undefined;
+          
           // Add content-type header if provided and there's a body
           const requestHeaders = { ...headers };
-          if (contentType && body) {
-            requestHeaders['Content-Type'] = contentType;
+          if (contentType) {
+            if (contentType === 'multipart/form-data' && boundary) {
+              requestHeaders['Content-Type'] = `multipart/form-data; boundary=${boundary}`;
+            } else if (body) {
+              requestHeaders['Content-Type'] = contentType;
+            }
           }
           
           const options = {
@@ -149,8 +165,11 @@ export default class HttpRequestController extends BaseController {
             });
           });
           
-          // Send request body if provided
-          if (body) {
+          // Handle multipart/form-data with files
+          if (contentType === 'multipart/form-data' && boundary) {
+            // Process files and form fields
+            this.handleMultipartFormData(req, body, parsedConfig.files, boundary);
+          } else if (body) {
             // Handle the body based on content type
             if (contentType && contentType.includes('application/json')) {
               // Check if the body has already been processed by webdriver.ts
@@ -211,5 +230,148 @@ export default class HttpRequestController extends BaseController {
         error: error instanceof Error ? error.message : String(error)
       };
     }
+  }
+
+  /**
+   * Handle multipart/form-data requests with file uploads
+   */
+  private handleMultipartFormData(
+    req: http.ClientRequest,
+    body: string | undefined,
+    files: HttpRequestConfig['files'],
+    boundary: string
+  ): void {
+    try {
+      // Process form fields from body (if any)
+      if (body) {
+        try {
+          // Try to parse the body as JSON to get form fields
+          const formFields = JSON.parse(body);
+          
+          // For arrays or complex objects, add the entire JSON as a single field
+          if (Array.isArray(formFields) || (typeof formFields === 'object' && formFields !== null)) {
+            const fieldPart = 
+              `--${boundary}\r\n` +
+              `Content-Disposition: form-data; name="data"\r\n` +
+              `Content-Type: application/json\r\n\r\n` +
+              `${body}\r\n`;
+            
+            req.write(fieldPart);
+          } else {
+            // For simple objects, add each field separately
+            Object.entries(formFields).forEach(([key, value]) => {
+              // If value is an object, stringify it
+              const stringValue = typeof value === 'object' && value !== null 
+                ? JSON.stringify(value) 
+                : String(value);
+                
+              const fieldPart = 
+                `--${boundary}\r\n` +
+                `Content-Disposition: form-data; name="${key}"\r\n\r\n` +
+                `${stringValue}\r\n`;
+              
+              req.write(fieldPart);
+            });
+          }
+        } catch (e) {
+          // If body is not valid JSON, treat it as a single form field
+          const fieldPart = 
+            `--${boundary}\r\n` +
+            `Content-Disposition: form-data; name="data"\r\n\r\n` +
+            `${body}\r\n`;
+          
+          req.write(fieldPart);
+        }
+      }
+      
+      // Process files from folder
+      if (files?.folderPath && files.folderPath.trim() !== '') {
+        try {
+          const folderPath = files.folderPath;
+          
+          // Get all files in the folder
+          const filesInFolder = glob.sync(path.join(folderPath, '*'));
+          
+          // Add each file to the multipart request
+          filesInFolder.forEach((filePath) => {
+            if (fs.statSync(filePath).isFile()) {
+              const fileName = path.basename(filePath);
+              const fileContent = fs.readFileSync(filePath);
+              const mimeType = this.getMimeType(filePath);
+              
+              const filePart = 
+                `--${boundary}\r\n` +
+                `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+                `Content-Type: ${mimeType}\r\n\r\n`;
+              
+              req.write(filePart);
+              req.write(fileContent);
+              req.write('\r\n');
+            }
+          });
+        } catch (error) {
+          console.error('Error processing folder files:', error);
+        }
+      }
+      
+      // Process individual files
+      if (files?.filePaths && files.filePaths.length > 0) {
+        files.filePaths.forEach((filePath) => {
+          try {
+            if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+              const fileName = path.basename(filePath);
+              const fileContent = fs.readFileSync(filePath);
+              const mimeType = this.getMimeType(filePath);
+              
+              const filePart = 
+                `--${boundary}\r\n` +
+                `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+                `Content-Type: ${mimeType}\r\n\r\n`;
+              
+              req.write(filePart);
+              req.write(fileContent);
+              req.write('\r\n');
+            }
+          } catch (error) {
+            console.error(`Error processing file ${filePath}:`, error);
+          }
+        });
+      }
+      
+      // End the multipart request
+      req.write(`--${boundary}--\r\n`);
+    } catch (error) {
+      console.error('Error in handleMultipartFormData:', error);
+    }
+  }
+  
+  /**
+   * Get MIME type based on file extension
+   */
+  private getMimeType(filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase();
+    
+    const mimeTypes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.pdf': 'application/pdf',
+      '.txt': 'text/plain',
+      '.html': 'text/html',
+      '.htm': 'text/html',
+      '.json': 'application/json',
+      '.xml': 'application/xml',
+      '.zip': 'application/zip',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.ppt': 'application/vnd.ms-powerpoint',
+      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      '.csv': 'text/csv',
+    };
+    
+    return mimeTypes[ext] || 'application/octet-stream';
   }
 }

@@ -2695,6 +2695,24 @@ WebDriverExecutor.prototype.doHttpRequest = async function(
       }
     }
     
+    // Process file paths if present
+    if (config.files) {
+      // Handle folder path
+      if (config.files.folderPath && typeof config.files.folderPath === 'string') {
+        config.files.folderPath = interpolateString(config.files.folderPath, this.variables);
+      }
+      
+      // Handle individual file paths
+      if (config.files.filePaths && Array.isArray(config.files.filePaths)) {
+        config.files.filePaths = config.files.filePaths.map(filePath => {
+          if (typeof filePath === 'string') {
+            return interpolateString(filePath, this.variables);
+          }
+          return filePath;
+        });
+      }
+    }
+    
     // Use Electron IPC to send the request through the main process
     const response = await this.driver.executeScript<any>(`
       return new Promise((resolve) => {
