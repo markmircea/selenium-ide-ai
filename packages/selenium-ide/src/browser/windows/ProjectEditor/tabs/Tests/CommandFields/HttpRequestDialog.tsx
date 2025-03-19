@@ -33,21 +33,46 @@ export interface HttpRequestConfig {
   timeout?: number;
 }
 
-// Helper function to format JSON with proper indentation
+// Helper function to format JSON with proper indentation, handling ${variable} syntax
 const formatJSON = (jsonString: string): string => {
+  // If the string is just a variable reference, return it as is
+  if (jsonString.trim().match(/^\$\{[^}]+\}$/)) {
+    return jsonString;
+  }
+  
   try {
-    const obj = JSON.parse(jsonString);
-    return JSON.stringify(obj, null, 2);
+    // First, extract all variable references and replace them with placeholders
+    const variables: string[] = [];
+    const processedString = jsonString.replace(/\$\{[^}]+\}/g, (match) => {
+      variables.push(match);
+      return `"__VAR_${variables.length - 1}__"`;
+    });
+    
+    // Parse and format the JSON
+    const formatted = JSON.stringify(JSON.parse(processedString), null, 2);
+    
+    // Replace the placeholders back with the original variable references
+    return formatted.replace(/"__VAR_(\d+)__"/g, (_, index) => {
+      return variables[parseInt(index)];
+    });
   } catch (e) {
     // Return the original string if it's not valid JSON
     return jsonString;
   }
 };
 
-// Helper function to validate JSON
+// Helper function to validate JSON, allowing for ${variable} syntax
 const isValidJSON = (jsonString: string): boolean => {
+  // If the string is just a variable reference, consider it valid
+  if (jsonString.trim().match(/^\$\{[^}]+\}$/)) {
+    return true;
+  }
+  
   try {
-    JSON.parse(jsonString);
+    // Replace all ${variable} patterns with a valid JSON placeholder
+    // This allows validation of JSON that contains variables
+    const processedString = jsonString.replace(/\$\{[^}]+\}/g, '"__VARIABLE_PLACEHOLDER__"');
+    JSON.parse(processedString);
     return true;
   } catch (e) {
     return false;
@@ -138,11 +163,10 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
     
     // Validate JSON if the field is body and content type is JSON
     if (field === 'body' && config.contentType === 'application/json' && newValue.trim()) {
-      try {
-        JSON.parse(newValue);
+      if (isValidJSON(newValue)) {
         setJsonError(null);
-      } catch (e) {
-        setJsonError((e as Error).message);
+      } else {
+        setJsonError("Invalid JSON format. Remember that you can use ${variable} syntax for dynamic values.");
       }
     }
   }
@@ -163,11 +187,10 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
     
     // Validate JSON if the new content type is JSON and there's a body
     if (newContentType === 'application/json' && config.body.trim()) {
-      try {
-        JSON.parse(config.body);
+      if (isValidJSON(config.body)) {
         setJsonError(null);
-      } catch (e) {
-        setJsonError((e as Error).message);
+      } else {
+        setJsonError("Invalid JSON format. Remember that you can use ${variable} syntax for dynamic values.");
       }
     } else {
       setJsonError(null);
@@ -177,15 +200,17 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   // Format JSON in the body textarea
   const handleFormatJSON = () => {
     if (config.contentType === 'application/json' && config.body.trim()) {
-      try {
-        const formattedJSON = formatJSON(config.body);
-        setConfig({
-          ...config,
-          body: formattedJSON,
-        });
+      const formattedJSON = formatJSON(config.body);
+      setConfig({
+        ...config,
+        body: formattedJSON,
+      });
+      
+      // Validate the formatted JSON
+      if (isValidJSON(formattedJSON)) {
         setJsonError(null);
-      } catch (e) {
-        setJsonError((e as Error).message);
+      } else {
+        setJsonError("Invalid JSON format. Remember that you can use ${variable} syntax for dynamic values.");
       }
     }
   }
