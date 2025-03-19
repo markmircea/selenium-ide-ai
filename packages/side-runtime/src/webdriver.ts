@@ -2592,6 +2592,109 @@ WebDriverExecutor.prototype.doHttpRequest = async function(
     
     const config = JSON.parse(sanitizedJson);
     
+    // Apply variable interpolation to all fields except body (which we'll handle specially)
+    if (config.url) {
+      config.url = interpolateString(config.url, this.variables);
+    }
+    
+    // Handle headers - interpolate both keys and values
+    if (config.headers && typeof config.headers === 'object') {
+      const interpolatedHeaders: Record<string, string> = {};
+      
+      Object.keys(config.headers).forEach(key => {
+        // Interpolate the header name (key)
+        const interpolatedKey = interpolateString(key, this.variables);
+        
+        // Interpolate the header value
+        let value = config.headers[key];
+        if (typeof value === 'string') {
+          value = interpolateString(value, this.variables);
+        }
+        
+        // Add to the new headers object
+        interpolatedHeaders[interpolatedKey] = value;
+      });
+      
+      // Replace the original headers with the interpolated ones
+      config.headers = interpolatedHeaders;
+    }
+    
+    // Handle query params - interpolate both keys and values
+    if (config.queryParams && typeof config.queryParams === 'object') {
+      const interpolatedParams: Record<string, string> = {};
+      
+      Object.keys(config.queryParams).forEach(key => {
+        // Interpolate the parameter name (key)
+        const interpolatedKey = interpolateString(key, this.variables);
+        
+        // Interpolate the parameter value
+        let value = config.queryParams[key];
+        if (typeof value === 'string') {
+          value = interpolateString(value, this.variables);
+        }
+        
+        // Add to the new params object
+        interpolatedParams[interpolatedKey] = value;
+      });
+      
+      // Replace the original params with the interpolated ones
+      config.queryParams = interpolatedParams;
+    }
+    
+    // Special handling for body if it's a variable reference
+    if (config.body && typeof config.body === 'string') {
+      if (config.body.trim().startsWith('${') && config.body.trim().endsWith('}')) {
+        const bodyVarName = config.body.trim().substring(2, config.body.trim().length - 1);
+        const bodyVarValue = this.variables.get(bodyVarName);
+        
+        // If the variable exists
+        if (bodyVarValue !== undefined) {
+          // Add a special marker to indicate this is a pre-processed JSON object
+          // This will be detected by HttpRequestController
+          if (bodyVarValue === null || bodyVarValue === undefined) {
+            // Handle null or undefined
+            config.body = JSON.stringify(bodyVarValue);
+            config._bodyIsProcessedJson = true;
+          } else if (typeof bodyVarValue === 'object') {
+            // Handle objects (including arrays)
+            try {
+              config.body = JSON.stringify(bodyVarValue);
+              config._bodyIsProcessedJson = true;
+              
+              // Log for debugging
+              if (this.logger) {
+                this.logger.info(`Using JSON object from variable ${bodyVarName}: ${config.body.substring(0, 100)}${config.body.length > 100 ? '...' : ''}`);
+              }
+            } catch (error) {
+              if (this.logger) {
+                this.logger.error(`Failed to stringify object: ${error instanceof Error ? error.message : String(error)}`);
+              }
+              // If stringification fails, use a fallback
+              config.body = JSON.stringify([]);
+              config._bodyIsProcessedJson = true;
+            }
+          } else if (typeof bodyVarValue === 'string') {
+            try {
+              // Check if it's valid JSON
+              JSON.parse(bodyVarValue);
+              config.body = bodyVarValue;
+              config._bodyIsProcessedJson = true;
+            } catch (e) {
+              // Not valid JSON, use as-is
+              config.body = bodyVarValue;
+            }
+          } else {
+            // For other types (number, boolean), stringify
+            config.body = JSON.stringify(bodyVarValue);
+            config._bodyIsProcessedJson = true;
+          }
+        }
+      } else {
+        // For bodies that aren't just a variable reference, apply normal interpolation
+        config.body = interpolateString(config.body, this.variables);
+      }
+    }
+    
     // Use Electron IPC to send the request through the main process
     const response = await this.driver.executeScript<any>(`
       return new Promise((resolve) => {
@@ -2637,12 +2740,8 @@ WebDriverExecutor.prototype.doHttpRequest = async function(
   }
 }
 
-// Add preprocessor
-WebDriverExecutor.prototype.doHttpRequest = composePreprocessors(
-  interpolateString,
-  null,
-  WebDriverExecutor.prototype.doHttpRequest
-)
+// We don't use the standard preprocessor for doHttpRequest because we need special handling for JSON variables
+// Instead, we'll handle interpolation manually in the method
 
 // @ts-expect-error
 createVerifyCommands(WebDriverExecutor)

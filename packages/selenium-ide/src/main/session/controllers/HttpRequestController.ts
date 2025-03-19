@@ -20,6 +20,7 @@ export interface HttpRequestConfig {
   body?: string;
   contentType?: string;
   timeout?: number;
+  _bodyIsProcessedJson?: boolean;
 }
 
 export default class HttpRequestController extends BaseController {
@@ -152,14 +153,12 @@ export default class HttpRequestController extends BaseController {
           if (body) {
             // Handle the body based on content type
             if (contentType && contentType.includes('application/json')) {
-              try {
-                // Check if the body is a stringified representation of an object/array
-                // This happens when a variable containing an object is interpolated into the body
-                if (body.includes('[object Object]')) {
-                  console.warn('Detected [object Object] in body, this might be a variable interpolation issue');
-                  // This is a fallback, but the proper solution is to handle this in the runtime
-                  req.write(body);
-                } else {
+              // Check if the body has already been processed by webdriver.ts
+              if (parsedConfig._bodyIsProcessedJson) {
+                // Body is already properly formatted JSON, send as-is
+                req.write(body);
+              } else {
+                try {
                   // For JSON content, we need to parse it and then stringify it properly
                   // This ensures that escape characters and newlines are handled correctly
                   
@@ -180,11 +179,11 @@ export default class HttpRequestController extends BaseController {
                   // Now stringify the parsed body without pretty-printing
                   // This ensures no literal newlines or unnecessary escape characters are included
                   req.write(JSON.stringify(parsedBody));
+                } catch (e) {
+                  console.error('Error processing JSON body:', e);
+                  // If all parsing attempts fail, send the original body as a last resort
+                  req.write(body);
                 }
-              } catch (e) {
-                console.error('Error processing JSON body:', e);
-                // If all parsing attempts fail, send the original body as a last resort
-                req.write(body);
               }
             } else {
               // For non-JSON content types, send the body as is
