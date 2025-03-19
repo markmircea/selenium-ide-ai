@@ -172,19 +172,25 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   }
 
   const handleMethodChange = (event: any) => {
-    setConfig({
+    // Create a new config object to ensure state update
+    const newConfig = {
       ...config,
       method: event.target.value,
-    })
+    };
+    setConfig(newConfig);
   }
 
   const handleContentTypeChange = (event: any) => {
     const newContentType = event.target.value;
-    setConfig({
+    
+    // Create a new config object to ensure state update
+    const newConfig = {
       ...config,
       contentType: newContentType,
-    })
+    };
+    setConfig(newConfig);
     
+    // Use the new config object for validation
     // Validate JSON if the new content type is JSON and there's a body
     if (newContentType === 'application/json' && config.body.trim()) {
       if (isValidJSON(config.body)) {
@@ -206,7 +212,6 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
         body: formattedJSON,
       });
       
-      // Validate the formatted JSON
       if (isValidJSON(formattedJSON)) {
         setJsonError(null);
       } else {
@@ -221,57 +226,72 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
 
   const handleAddHeader = () => {
     if (headerKey.trim()) {
-      setConfig({
+      const newHeaders = {
+        ...config.headers,
+        [headerKey]: headerValue,
+      };
+      
+      const newConfig = {
         ...config,
-        headers: {
-          ...config.headers,
-          [headerKey]: headerValue,
-        },
-      })
-      setHeaderKey('')
-      setHeaderValue('')
+        headers: newHeaders,
+      };
+      
+      setConfig(newConfig);
+      setHeaderKey('');
+      setHeaderValue('');
     }
   }
 
   const handleRemoveHeader = (key: string) => {
-    const newHeaders = { ...config.headers }
-    delete newHeaders[key]
-    setConfig({
+    const newHeaders = { ...config.headers };
+    delete newHeaders[key];
+    
+    const newConfig = {
       ...config,
       headers: newHeaders,
-    })
+    };
+    
+    setConfig(newConfig);
   }
   
   const handleAddQueryParam = () => {
     if (paramKey.trim()) {
-      setConfig({
+      const newParams = {
+        ...config.queryParams,
+        [paramKey]: paramValue,
+      };
+      
+      const newConfig = {
         ...config,
-        queryParams: {
-          ...config.queryParams,
-          [paramKey]: paramValue,
-        },
-      })
-      setParamKey('')
-      setParamValue('')
+        queryParams: newParams,
+      };
+      
+      setConfig(newConfig);
+      setParamKey('');
+      setParamValue('');
     }
   }
 
   const handleRemoveQueryParam = (key: string) => {
-    const newParams = { ...config.queryParams }
-    delete newParams[key]
-    setConfig({
+    const newParams = { ...config.queryParams };
+    delete newParams[key];
+    
+    const newConfig = {
       ...config,
       queryParams: newParams,
-    })
+    };
+    
+    setConfig(newConfig);
   }
 
   const handleTimeoutChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const timeout = parseInt(event.target.value)
     if (!isNaN(timeout) && timeout > 0) {
-      setConfig({
+      const newConfig = {
         ...config,
         timeout,
-      })
+      };
+      setConfig(newConfig);
     }
   }
 
@@ -304,6 +324,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
               value={config.method}
               onChange={handleMethodChange}
               label={intl.formatMessage({ id: 'Method' })}
+              MenuProps={{ disableScrollLock: true }}
             >
               <MenuItem value="GET">GET</MenuItem>
               <MenuItem value="POST">POST</MenuItem>
@@ -348,8 +369,8 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
                 <AddIcon />
               </IconButton>
             </Box>
-            {Object.entries(config.queryParams || {}).map(([key, value]) => (
-              <Box key={key} sx={{ display: 'flex', gap: 2, mb: 1 }}>
+            {Object.entries(config.queryParams || {}).map(([key, value], index) => (
+              <Box key={`param-${key}-${index}`} sx={{ display: 'flex', gap: 2, mb: 1 }}>
                 <TextField
                   disabled
                   value={key}
@@ -386,8 +407,8 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
                 <AddIcon />
               </IconButton>
             </Box>
-            {Object.entries(config.headers).map(([key, value]) => (
-              <Box key={key} sx={{ display: 'flex', gap: 2, mb: 1 }}>
+            {Object.entries(config.headers).map(([key, value], index) => (
+              <Box key={`header-${key}-${index}`} sx={{ display: 'flex', gap: 2, mb: 1 }}>
                 <TextField
                   disabled
                   value={key}
@@ -415,6 +436,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
                   value={config.contentType}
                   onChange={handleContentTypeChange}
                   label={intl.formatMessage({ id: 'Content Type' })}
+                  MenuProps={{ disableScrollLock: true }}
                 >
                   <MenuItem value="application/json">application/json</MenuItem>
                   <MenuItem value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</MenuItem>
@@ -495,8 +517,8 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
                 {config.contentType && config.body && (
                   <Typography variant="body2">Content-Type: {config.contentType}</Typography>
                 )}
-                {Object.entries(config.headers).map(([key, value]) => (
-                  <Typography key={key} variant="body2">{key}: {value}</Typography>
+                {Object.entries(config.headers).map(([key, value], index) => (
+                  <Typography key={`preview-header-${key}-${index}`} variant="body2">{key}: {value}</Typography>
                 ))}
                 {Object.keys(config.headers).length === 0 && !config.contentType && (
                   <Typography variant="body2" color="text.secondary">
