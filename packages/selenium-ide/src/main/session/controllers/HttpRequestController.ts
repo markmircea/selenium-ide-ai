@@ -3,7 +3,6 @@ import * as https from 'https';
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as glob from 'glob';
 import BaseController from './Base';
 import { Session } from '../../types';
 import { getMimeType } from '../../utils/mimeTypes';
@@ -26,7 +25,7 @@ export interface HttpRequestConfig {
   timeout?: number;
   _bodyIsProcessedJson?: boolean;
   files?: {
-    folderPath?: string;
+    folderPaths?: string[];
     filePaths?: string[];
   };
 }
@@ -285,18 +284,45 @@ export default class HttpRequestController extends BaseController {
         }
       }
       
-      // Process files from folder
-      if (files?.folderPath && files.folderPath.trim() !== '') {
+      // Process files from folders
+      const folderPaths: string[] = [];
+      
+
+      
+      // Add folderPaths array if it exists
+      if (files?.folderPaths && files.folderPaths.length > 0) {
+        folderPaths.push(...files.folderPaths);
+      }
+      
+      // Process all folder paths
+      let fileIndex = 0;
+      for (const folderPath of folderPaths) {
         try {
-          const folderPath = files.folderPath;
+          // Check if the folder exists
+          if (!fs.existsSync(folderPath)) {
+            console.error(`Folder does not exist: ${folderPath}`);
+            continue;
+          }
           
-          // Get all files in the folder
-          const filesInFolder = glob.sync(path.join(folderPath, '*'));
+          // Check if it's actually a directory
+          if (!fs.statSync(folderPath).isDirectory()) {
+            console.error(`Path is not a directory: ${folderPath}`);
+            continue;
+          }
+          
+          // Read the directory directly instead of using glob
+          const filesInFolder = fs.readdirSync(folderPath)
+            .map(file => path.join(folderPath, file))
+            .filter(filePath => fs.statSync(filePath).isFile());
+          
           console.log(`Found ${filesInFolder.length} files in folder ${folderPath}`);
           
+          // Log the files found for debugging
+          filesInFolder.forEach(file => console.log(`Found file: ${file}`));
+          
           // Add each file to the multipart request
-          filesInFolder.forEach((filePath, index) => {
-            if (fs.statSync(filePath).isFile()) {
+          filesInFolder.forEach((filePath) => {
+            try {
               const fileName = path.basename(filePath);
               const fileContent = fs.readFileSync(filePath);
               const mimeType = getMimeType(filePath);
@@ -304,7 +330,7 @@ export default class HttpRequestController extends BaseController {
               // Use a unique name parameter for each file to ensure they're all sent
               const filePart = 
                 `--${boundary}\r\n` +
-                `Content-Disposition: form-data; name="file_${index}"; filename="${fileName}"\r\n` +
+                `Content-Disposition: form-data; name="${fileName}_${fileIndex}"; filename="${fileName}"\r\n` +
                 `Content-Type: ${mimeType}\r\n\r\n`;
               
               req.write(filePart);
@@ -312,10 +338,13 @@ export default class HttpRequestController extends BaseController {
               req.write('\r\n');
               
               console.log(`Added file from folder: ${fileName} (${mimeType})`);
+              fileIndex++;
+            } catch (fileError) {
+              console.error(`Error processing file ${filePath}:`, fileError);
             }
           });
         } catch (error) {
-          console.error('Error processing folder files:', error);
+          console.error(`Error processing folder files from ${folderPath}:`, error);
         }
       }
       
@@ -331,7 +360,7 @@ export default class HttpRequestController extends BaseController {
               // Use a unique name parameter for each file to ensure they're all sent
               const filePart = 
                 `--${boundary}\r\n` +
-                `Content-Disposition: form-data; name="file_${index}"; filename="${fileName}"\r\n` +
+                `Content-Disposition: form-data; name="${fileName}_${index}"; filename="${fileName}"\r\n` +
                 `Content-Type: ${mimeType}\r\n\r\n`;
               
               req.write(filePart);

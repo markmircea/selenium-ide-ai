@@ -32,7 +32,7 @@ export interface HttpRequestConfig {
   contentType: string;
   timeout?: number;
   files?: {
-    folderPath?: string;
+    folderPaths?: string[];
     filePaths?: string[];
   };
 }
@@ -127,6 +127,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
   const [paramKey, setParamKey] = useState('')
   const [paramValue, setParamValue] = useState('')
   const [jsonError, setJsonError] = useState<string | null>(null)
+  const [folderPath, setFolderPath] = useState('')
   const [filePath, setFilePath] = useState('')
 
   // Reset form when dialog opens with new initialConfig
@@ -143,7 +144,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
           contentType: initialConfig?.contentType || 'application/json',
           timeout: initialConfig?.timeout || 30000,
           files: initialConfig?.files || {
-            folderPath: '',
+            folderPaths: [],
             filePaths: [],
           },
         })
@@ -159,7 +160,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
           contentType: 'application/json',
           timeout: 30000,
           files: {
-            folderPath: '',
+            folderPaths: [],
             filePaths: [],
           },
         })
@@ -510,27 +511,66 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
               {intl.formatMessage({ id: 'File Upload Settings' })}
             </Typography>
             
-            <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              {intl.formatMessage({ id: 'Folders' })}
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <TextField
                 label={intl.formatMessage({ id: 'Folder Path' })}
-                value={config.files?.folderPath || ''}
-                onChange={(e) => {
-                  const newConfig = {
-                    ...config,
-                    files: {
-                      ...config.files,
-                      folderPath: e.target.value,
-                    },
-                  };
-                  setConfig(newConfig);
-                }}
+                value={folderPath}
+                onChange={(e) => setFolderPath(e.target.value)}
                 fullWidth
-                helperText={intl.formatMessage({ id: 'Path to folder containing files to upload. You can use ${variable} syntax' })}
-                sx={{ mb: 2 }}
+                helperText={intl.formatMessage({ id: 'Path to folder containing files to upload (e.g. C:\\images\\). You can use ${variable} syntax' })}
               />
+              <IconButton 
+                onClick={() => {
+                  if (folderPath.trim()) {
+                    const newFolderPaths = [...(config.files?.folderPaths || []), folderPath];
+                    const newConfig = {
+                      ...config,
+                      files: {
+                        ...config.files,
+                        folderPaths: newFolderPaths,
+                      },
+                    };
+                    setConfig(newConfig);
+                    setFolderPath('');
+                  }
+                }}
+                sx={{ mt: 1 }}
+              >
+                <AddIcon />
+              </IconButton>
             </Box>
             
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            {(config.files?.folderPaths || []).map((path, index) => (
+              <Box key={`folder-${index}`} sx={{ display: 'flex', gap: 2, mb: 1 }}>
+                <TextField
+                  disabled
+                  value={path}
+                  fullWidth
+                />
+                <IconButton 
+                  onClick={() => {
+                    const newFolderPaths = [...(config.files?.folderPaths || [])];
+                    newFolderPaths.splice(index, 1);
+                    const newConfig = {
+                      ...config,
+                      files: {
+                        ...config.files,
+                        folderPaths: newFolderPaths,
+                      },
+                    };
+                    setConfig(newConfig);
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            ))}
+            
+            <Typography variant="subtitle2" sx={{ mb: 1, mt: 3 }}>
               {intl.formatMessage({ id: 'Individual Files' })}
             </Typography>
             
@@ -540,7 +580,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
                 value={filePath}
                 onChange={(e) => setFilePath(e.target.value)}
                 fullWidth
-                helperText={intl.formatMessage({ id: 'You can use ${variable} syntax' })}
+                helperText={intl.formatMessage({ id: 'Path to file to upload (e.g. C:\\images\\img.jpeg) You can use ${variable} syntax' })}
               />
               <IconButton 
                 onClick={() => {
@@ -657,7 +697,7 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
               )}
               
               {config.contentType === 'multipart/form-data' && 
-               ((config.files?.folderPath && config.files.folderPath.trim() !== '') || 
+               ((config.files?.folderPaths && config.files.folderPaths.length > 0) || 
                 (config.files?.filePaths && config.files.filePaths.length > 0)) && (
                 <>
                   <Divider sx={{ my: 1 }} />
@@ -673,11 +713,11 @@ const HttpRequestDialog: FC<HttpRequestDialogProps> = ({
                       overflow: 'auto'
                     }}
                   >
-                    {config.files?.folderPath && (
-                      <Typography variant="body2">
-                        {intl.formatMessage({ id: 'Folder' })}: {config.files.folderPath}
+                    {config.files?.folderPaths && config.files.folderPaths.map((path, index) => (
+                      <Typography key={`preview-folder-${index}`} variant="body2">
+                        {intl.formatMessage({ id: 'Folder' })} {index + 1}: {path}
                       </Typography>
-                    )}
+                    ))}
                     {config.files?.filePaths && config.files.filePaths.map((path, index) => (
                       <Typography key={`preview-file-${index}`} variant="body2">
                         {intl.formatMessage({ id: 'File' })} {index + 1}: {path}
